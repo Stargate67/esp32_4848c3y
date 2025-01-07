@@ -2,31 +2,6 @@
 #include <MainScreen.h>
 #include <MainScreen.h>
 
-// Event handler for the button
-void btn_event_handler(lv_event_t *e) {
-
-    compteur++;
-
-    //Serial.println(compteur);
-
-
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
-
-    if (code == LV_EVENT_CLICKED) {
-
-        //Serial.println("btnRelay_1 Clicked !" + char(code));
-
-        if (lv_obj_has_state(btn, LV_STATE_CHECKED)) {
-            // Create an animation to increase the bar value gradually
-            //Serial.println("btnRelay_1 Checked !") ;
-        } else {
-            // Create an animation to decrease the bar value gradually
-            //Serial.println("btnRelay_1 Unchecked !");
-        }
-    }
-}
-
 void lv_example_button_R1(lv_obj_t *parent){
     // Créer l'interface utilisateur
     btnRelay_1 = lv_btn_create(parent);    // Créer un bouton

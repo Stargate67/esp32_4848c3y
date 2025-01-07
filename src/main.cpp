@@ -338,7 +338,7 @@ void setup()
 void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
-
+  ReadModbus();
 /*
   stext2.pushSprite(0, 56);
   //delay(5); // sped it up a little
@@ -385,13 +385,13 @@ void loop() {
     stext2.drawString((sExtMaxTimeStp), 550, 50, 4);
 
   }
-
+*/
   if (!getLocalTime(&timeinfo)) {
-    tft.drawString("Failed to obtain time", 0, 0, 7);
+    lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
     return;
   }
-*/
-/*
+
+
   // Display clock
   sClockHHMMSS = 
     (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
@@ -406,9 +406,7 @@ void loop() {
     + ":" + 
     (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
     ;
-
-  //tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  //tft.drawString(sClockHHMMSS, 0, 0, 7);
+  lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
 
   // Display Date 
   if (timeinfo.tm_mday != TmpDay) {
@@ -420,13 +418,9 @@ void loop() {
     if (SERDEBUG) Serial.println("Date: " + sPrintdate);
     TmpDay = timeinfo.tm_mday;
 
-    //tft.fillScreen(TFT_BLACK);
-
   }
-  ReadModbus();
-*/
 
-  
+ 
 }
 
 
