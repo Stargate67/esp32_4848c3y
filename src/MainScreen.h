@@ -17,13 +17,17 @@ lv_obj_t *lblBtnRelay_1;
 lv_obj_t *lblBtnRelay_2;
 lv_obj_t *lblBtnRelay_3;
 lv_obj_t *scr;
-lv_obj_t *label;
+lv_obj_t *IPLabel;
+lv_obj_t *AlarmLabel;
+lv_obj_t *ClockLabel;
 
 static void my_event_cb_Relay_1 (lv_event_t * e);
 static void my_event_cb_Relay_2 (lv_event_t * e);
 static void my_event_cb_Relay_3 (lv_event_t * e);
 
-void create_hello_world(lv_obj_t * parent);
+void CreateIPLabel(lv_obj_t * parent);
+void CreateAlarm(lv_obj_t * parent);
+void CreateClock(lv_obj_t * parent);
 void lv_example_button_R1(lv_obj_t * parent);
 void lv_example_button_R2(lv_obj_t * parent);
 void lv_example_button_R3(lv_obj_t * parent);

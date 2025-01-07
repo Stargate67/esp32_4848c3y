@@ -30,8 +30,8 @@ void btn_event_handler(lv_event_t *e) {
 void lv_example_button_R1(lv_obj_t *parent){
     // Créer l'interface utilisateur
     btnRelay_1 = lv_btn_create(parent);    // Créer un bouton
-    lv_obj_set_size(btnRelay_1, 120, 200);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_1, LV_ALIGN_TOP_LEFT, 10, 50);      // Centrer le bouton
+    lv_obj_set_size(btnRelay_1, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnRelay_1, LV_ALIGN_TOP_LEFT, 10, 360);      // Centrer le bouton
 
     // Ajouter une étiquette au bouton
     lblBtnRelay_1 = lv_label_create(btnRelay_1);
@@ -44,8 +44,8 @@ void lv_example_button_R1(lv_obj_t *parent){
 
 void lv_example_button_R2(lv_obj_t *parent){
     btnRelay_2 = lv_btn_create(parent);
-    lv_obj_set_size(btnRelay_2, 120, 200);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_2, LV_ALIGN_TOP_LEFT, 140, 50);
+    lv_obj_set_size(btnRelay_2, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnRelay_2, LV_ALIGN_TOP_LEFT, 140, 360);
     //lv_obj_remove_flag(btnRelay_2, LV_OBJ_FLAG_PRESS_LOCK);
 
     lblBtnRelay_2 = lv_label_create(btnRelay_2);
@@ -57,8 +57,8 @@ void lv_example_button_R2(lv_obj_t *parent){
 
 void lv_example_button_R3(lv_obj_t *parent){
     btnRelay_3 = lv_btn_create(parent);
-    lv_obj_set_size(btnRelay_3, 120, 200);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_3, LV_ALIGN_TOP_LEFT, 270, 50);
+    lv_obj_set_size(btnRelay_3, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnRelay_3, LV_ALIGN_TOP_LEFT, 270, 360);
     //lv_obj_remove_flag(btnRelay_2, LV_OBJ_FLAG_PRESS_LOCK);
 
     lblBtnRelay_3 = lv_label_create(btnRelay_3);
@@ -68,26 +68,32 @@ void lv_example_button_R3(lv_obj_t *parent){
     lv_obj_add_event_cb(btnRelay_3, my_event_cb_Relay_3, LV_EVENT_RELEASED, NULL);
 }
 
-void create_hello_world(lv_obj_t * parent)
+void CreateIPLabel(lv_obj_t * parent)
 {
-    // Create a label
-    label = lv_label_create(parent); 
-    
-    // Set the text
-    lv_label_set_text(label, "Hello, World!");
-    
-    // Increase the font size (multiplier for the default font size)
-    lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
-    
-    // Set text color to white
-    lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    
-    // Center the label on the screen
-    //lv_obj_center(label);
-    lv_obj_set_pos(label, 180, 10); 
+    IPLabel = lv_label_create(parent); 
+    lv_label_set_text(IPLabel, "XXX.XXX.XXX.XXX");
+    lv_obj_set_style_text_font(IPLabel, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(IPLabel, lv_color_make(255, 250, 0), 0); //yellow
+    lv_obj_align(IPLabel, LV_ALIGN_TOP_LEFT, 0, 3); 
 }
 
+void CreateAlarm(lv_obj_t * parent)
+{
+    AlarmLabel = lv_label_create(parent); 
+    lv_label_set_text(AlarmLabel, "Dislay the alarms...");
+    lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(AlarmLabel, lv_color_make(255, 0, 0), 0); //Red
+    lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 80, 0); 
+}
 
+void CreateClock(lv_obj_t * parent)
+{    // Create a label
+    ClockLabel = lv_label_create(parent); 
+    lv_label_set_text(ClockLabel, "HH:MM:SS");
+    lv_obj_set_style_text_font(ClockLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(ClockLabel, lv_color_white(), 0);
+    lv_obj_align(ClockLabel, LV_ALIGN_TOP_RIGHT, 0, 0); 
+}
 //************************************************************************************************************/
 //============================================================================================================/
 
