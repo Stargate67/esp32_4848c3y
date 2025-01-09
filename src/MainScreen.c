@@ -69,9 +69,9 @@ void CreateClock(lv_obj_t * parent)
     lv_obj_set_style_text_color(ClockLabel, lv_color_white(), 0);
     lv_obj_align(ClockLabel, LV_ALIGN_TOP_RIGHT, 0, 0); 
 }
+
 //************************************************************************************************************/
 //============================================================================================================/
-
 
 static void my_event_cb_Relay_1 (lv_event_t *e){
     compteur++;

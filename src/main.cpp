@@ -293,6 +293,8 @@ void UpdateTickers(){
   lv_timer_handler();
 }
 
+//************************************************************************************************************/
+//============================================================================================================/
 void setup()
 {
   Serial.begin(115200);
@@ -391,7 +393,6 @@ void loop() {
     return;
   }
 
-
   // Display clock
   sClockHHMMSS = 
     (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
@@ -419,8 +420,6 @@ void loop() {
     TmpDay = timeinfo.tm_mday;
 
   }
-
- 
 }
 
 
