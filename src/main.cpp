@@ -11,10 +11,6 @@ uint32_t targetTime = 0;       // for next 1 second timeout
 
 #define SERDEBUG false
 
-byte omm = 99;
-boolean initial = 1;
-byte xcolon = 0;
-unsigned int colour = 0;
 String sPrintdate;
 String sPrintShortdate;
 String sClockHHMMSS;
@@ -154,19 +150,22 @@ void ReadModbus() {
       {
         mb.disconnect(MBremote);
         rTempSal = round(MBresult[0] * 100.0 / 10.0)/100.0;
-        sTempSal = "T. Sal: " + String(rTempSal) + " " + String((char)167) + "C";
+        sTempSal = "T. Sal: " + String(rTempSal) + " °C";
         rTmp = (MBresult[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        sTempExt = "T. Ext: " + String(rTempExt) + " " + String((char)167) + "C";
+        sTempExt = "T. Ext: " + String(rTempExt) + " °C";
         // Calcul la moyenne 
         rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
 
-        sTrend = String("  =");
+        sTrend = String(" =");
         if (rTempExt > rAvgTempExt) {
-          sTrend = String("  /");
+          sTrend = String(" /");
         } else if (rTempExt < rAvgTempExt){
-          sTrend = String("  \\");
+          sTrend = String(" \\");
         }
+        lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
+        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "        " + String(fnMin(rTempExt)) + " °C" + "            " + String(fnMax(rTempExt)) + " °C").c_str());
+        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "         " + sExtMinTimeStp + "              " + sExtMaxTimeStp).c_str());
 
         if (SERDEBUG) { 
           Serial.print("Avg T.Ext. = ");
@@ -306,30 +305,7 @@ void setup()
   digitalWrite(RELAY_2, LOW);
   digitalWrite(RELAY_3, LOW);
 
-  // Initialize the display
-  smartdisplay_init();
-
-  // Set backlight to full brightness
-  smartdisplay_lcd_set_backlight(0.6); // 0 is off, 0.5 is half and 1 is full brightness.
-
-  __attribute__((unused)) auto disp = lv_disp_get_default();
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_90);
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_180);
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
-
-  // Get the active screen
-  scr = lv_scr_act();
-
-  // Set screen background color to dark blue
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x090909), 0);
-
-  // Create the Hello World label
-  CreateIPLabel(scr);
-  CreateClock(scr);
-  CreateAlarm(scr);
-  lv_example_button_R1(scr);
-  lv_example_button_R2(scr);
-  lv_example_button_R3(scr);
+  InitUI();
 
   startWifi();
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
@@ -388,6 +364,7 @@ void loop() {
 
   }
 */
+
   if (!getLocalTime(&timeinfo)) {
     lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
     return;
