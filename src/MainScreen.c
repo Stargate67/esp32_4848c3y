@@ -132,7 +132,7 @@ void lv_CreateIPLabel(lv_obj_t * parent)
 void lv_CreateAlarm(lv_obj_t * parent)
 {
     AlarmLabel = lv_label_create(parent); 
-    lv_label_set_text(AlarmLabel, "Display the alarms...");
+    lv_label_set_text(AlarmLabel, "             ...Pas d'alarme...");
     lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_20, 0);
     lv_obj_set_style_text_color(AlarmLabel, lv_color_make(255, 0, 0), 0); //Red
     lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 80, 0); 
