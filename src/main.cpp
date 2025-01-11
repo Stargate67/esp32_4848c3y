@@ -1,59 +1,24 @@
 #include <Arduino.h>
-#include <esp32_smartdisplay.h>
-#include <MainScreen.h>
 #include "OTA.h"
 #include "time.h"
-#include <ModbusIP_ESP8266.h>
+#include "My_Modbus.h"
+//#include <ModbusIP_ESP8266.h>
 
 void UpdateTickers(void);
 
 uint32_t targetTime = 0;       // for next 1 second timeout
 
-#define SERDEBUG false
 
-String sPrintdate;
-String sPrintShortdate;
-String sClockHHMMSS;
-String sClockHHMM;
-String sExtMaxTimeStp = "00:00";
-String sExtMinTimeStp = "00:00";
-String sLocalIP;
-String sTempExt;
-String sTempSal;
-String sTrend;
-float rAvgTempExt = 0;
-float rTmp = 0;
 bool bTempDisplay = true; 
 unsigned long time_now = 0;
-//unsigned long time1_now = 0;
 unsigned long readMillis;
 unsigned long prevmillis = 0; //used to hold previous value of currmillis
-unsigned long prevmillis1 = 0; //used to hold previous value of currmillis
+
 int timer = 0;     //used in the delay function, difference between currmillis and prevmillis
 int TmpDay;
 struct tm timeinfo;
-int iState = 0;
-
-const int numReadings = 10;
-float readings [numReadings];
-int iReadIndex = 0;
-int iStartIndex = 0;
-float total = 0;
-int aisVal = 0;
 
 WiFiClient client;
-ModbusIP mb;  //ModbusIP object
-//IPAddress MBremote(192, 168, 0, 105);  // Address of Modbus Slave device
-IPAddress MBremote(77, 204, 15, 6);   // Address of Internet Box 
-const int START_REG = 12688;       // Starting holding register
-const int NUM_REGS = 10;           // Number of holding registers to read
-const int INTERVAL = 5000;         // Interval between reads (in milliseconds)
-
-uint16_t MBresult[NUM_REGS];
-uint8_t show = NUM_REGS;  // Counter for displaying values
-uint32_t LastModbusRequest = 0;  // Variable to track the last Modbus request time
-float rTempExt;
-float rTempSal;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
@@ -64,153 +29,6 @@ static uint8_t conv2d(const char* p) {
   if ('0' <= *p && *p <= '9')
     v = *p - '0';
   return 10 * v + *++p - '0';
-}
-
-//uint8_t hh=conv2d(__TIME__), mm=conv2d(__TIME__+3), ss=conv2d(__TIME__+6);  // Get H, M, S from compile time
-
-float fnMax(float fInput) { /* function fnMax */
-  //Perform Max Value 
-  static float fMaxValue = fInput;
-
-  if (fInput > fMaxValue || sClockHHMM == "00:00" ) { 
-    fMaxValue = fInput;
-    sExtMaxTimeStp = sClockHHMM;
-  }
-  return fMaxValue;
-}
-
-float fnMin(float fInput) { /* function fnMax */
-  //Perform Max Value 
-  static float fMinValue = fInput;
-
-  if (fInput < fMinValue || sClockHHMM == "00:00") { 
-    fMinValue = fInput;
-    sExtMinTimeStp = sClockHHMM;
-  }
-  return fMinValue;
-}
-
-float fnAverage(float fInput) { /* function fnAverage */
-  //Perform average on sensor readings
-  float average;
-  static float total;
-  // subtract the last reading:
-  total = total - readings[iReadIndex];
-  // read the sensor:
-  readings[iReadIndex] = fInput;
-  // add value to total:
-  total = total + readings[iReadIndex];
-  // handle index
-  iReadIndex = iReadIndex + 1;
-  if (iReadIndex >= numReadings) {
-    iReadIndex = 0;
-  }
-  if (iStartIndex < numReadings) {
-    iStartIndex = iStartIndex + 1;
-  }
-
-  // calculate the average:
-  average = total / numReadings;
-
-  if (iStartIndex >= numReadings) {
-    return average;
-  } else {
-    return fInput;
-  }
-}
-
-void ReadModbus() {
-  mb.task();
-  if (mb.isConnected(MBremote)) {  
-    //if (SERDEBUG) Serial.println(String(iState));
-    switch (iState) {
-      case 0:
-      {
-        // Read holding registers from Modbus Slave
-        uint8_t transaction = mb.readHreg(MBremote, START_REG, MBresult, NUM_REGS, nullptr, 1);        
-        prevmillis1 = millis();
-        iState = 10;
-        if (SERDEBUG) Serial.println("iState="+String(iState));
-      } 
-      break;
-
-      case 10:
-      {
-        // Wait for the transaction to complete
-        if (millis() >= prevmillis1 + 50){ //Process MB client request each second
-          prevmillis1 = millis();
-          iState = 20;
-          if (SERDEBUG) Serial.println("iState="+String(iState));
-        }
-      }
-      break;
-
-      // Lecture des valeurs dans le buffer MB et mise ne forme
-      case 20:
-      {
-        mb.disconnect(MBremote);
-        rTempSal = round(MBresult[0] * 100.0 / 10.0)/100.0;
-        sTempSal = "T. Sal: " + String(rTempSal) + " °C";
-        rTmp = (MBresult[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
-        rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        sTempExt = "T. Ext: " + String(rTempExt) + " °C";
-        // Calcul la moyenne 
-        rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
-
-        sTrend = String(" =");
-        if (rTempExt > rAvgTempExt) {
-          sTrend = String(" /");
-        } else if (rTempExt < rAvgTempExt){
-          sTrend = String(" \\");
-        }
-        lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
-        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "        " + String(fnMin(rTempExt)) + " °C" + "            " + String(fnMax(rTempExt)) + " °C").c_str());
-        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "         " + sExtMinTimeStp + "              " + sExtMaxTimeStp).c_str());
-
-        if (SERDEBUG) { 
-          Serial.print("Avg T.Ext. = ");
-          Serial.print(String(rAvgTempExt));
-          Serial.println(sTrend);
-        }
-        LastModbusRequest = millis();
-        iState = 30;
-        
-        if (SERDEBUG) {
-          Serial.println("iState=" + String(iState));
-        // Print holding register values
-          Serial.println("Holding Register Values:");
-          for (int i = 0; i < NUM_REGS; i++) {
-            Serial.print("Register ");
-            Serial.print(i);
-            Serial.print(": ");
-            Serial.println(MBresult[i]);
-          }
-        }
-      }
-      break;
-
-      case 30:
-      {     // Wait 5 sec
-        if (millis() - LastModbusRequest >= INTERVAL) {
-          LastModbusRequest = millis();
-          iState = 0;  // On recommence
-          if (SERDEBUG) Serial.println(String(iState));
-        }
-      }
-      break;
-
-      default:
-      {
-        iState = 0;
-        if (SERDEBUG) Serial.println(String(iState));
-      }
-      break;
-      }
-
-  } else {
-    // If not connected, try to connect
-    mb.connect(MBremote);
-  }
 }
 
 void timeloop (int interval){ // the delay function
@@ -263,7 +81,7 @@ void startWifi(){
   //long rssi = WiFi.RSSI();
   Serial.println("");
   Serial.println(WiFi.localIP());
-  sLocalIP = WiFi.localIP().toString();
+  String sLocalIP = WiFi.localIP().toString();
   lv_label_set_text(IPLabel, sLocalIP.c_str());
 }
 
@@ -305,18 +123,56 @@ void setup()
   digitalWrite(RELAY_2, LOW);
   digitalWrite(RELAY_3, LOW);
 
+  mb.client();
+  
   InitUI();
 
   startWifi();
-  initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
-  mb.client();
+  
   setupOTA("ESP32_4848SD_FY", ssid, password);
+
+  initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
 
 void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
-  ReadModbus();
+  //ReadModbus(mb);
+
+  if (!getLocalTime(&timeinfo)) {
+    lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
+    return;
+  }
+
+  // Display clock
+  sClockHHMMSS = 
+    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+    + ":" + 
+    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+    + ":" + 
+    (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
+    ;
+  
+  sClockHHMM = 
+    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+    + ":" + 
+    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+    ;
+  lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
+
+  // Display Date 
+  if (timeinfo.tm_mday != TmpDay) {
+    //printLocalTime();
+    sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
+
+    sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
+
+    if (SERDEBUG) Serial.println("Date: " + sPrintdate);
+    TmpDay = timeinfo.tm_mday;
+
+  }
+}
+
 /*
   stext2.pushSprite(0, 56);
   //delay(5); // sped it up a little
@@ -364,40 +220,4 @@ void loop() {
 
   }
 */
-
-  if (!getLocalTime(&timeinfo)) {
-    lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
-    return;
-  }
-
-  // Display clock
-  sClockHHMMSS = 
-    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-    + ":" + 
-    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-    + ":" + 
-    (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
-    ;
-  
-  sClockHHMM = 
-    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-    + ":" + 
-    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-    ;
-  lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
-
-  // Display Date 
-  if (timeinfo.tm_mday != TmpDay) {
-    //printLocalTime();
-    sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
-
-    sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
-
-    if (SERDEBUG) Serial.println("Date: " + sPrintdate);
-    TmpDay = timeinfo.tm_mday;
-
-  }
-}
-
-
 
