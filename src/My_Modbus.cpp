@@ -3,13 +3,14 @@
     HomIS mangement with HomIS PLC
 */
 
+#include "Globals.h"
 #include "My_Modbus.h"
 
-float fnMin(float fInput);
-float fnMax(float fInput); 
-float fnAverage(float fInput);
-
 void ReadModbus() {
+  
+  uint16_t MBresult[NUM_REGS];
+  uint32_t LastModbusRequest = 0;  // Variable to track the last Modbus request time
+
   unsigned long prevmillis1;
   int iState = 0;
 

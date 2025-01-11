@@ -2,19 +2,12 @@
 #include "OTA.h"
 #include "time.h"
 #include "My_Modbus.h"
+#include "Globals.h"
+
 //#include <ModbusIP_ESP8266.h>
 
 void UpdateTickers(void);
 
-uint32_t targetTime = 0;       // for next 1 second timeout
-
-
-bool bTempDisplay = true; 
-unsigned long time_now = 0;
-unsigned long readMillis;
-unsigned long prevmillis = 0; //used to hold previous value of currmillis
-
-int timer = 0;     //used in the delay function, difference between currmillis and prevmillis
 int TmpDay;
 struct tm timeinfo;
 
@@ -32,7 +25,9 @@ static uint8_t conv2d(const char* p) {
 }
 
 void timeloop (int interval){ // the delay function
-  prevmillis = millis();
+  int timer;
+
+  unsigned long prevmillis = millis();
   do {
      timer = (millis() - prevmillis); 
   } while(timer < interval); 
@@ -144,14 +139,7 @@ void loop() {
     return;
   }
 
-  // Display clock
-  sClockHHMMSS = 
-    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-    + ":" + 
-    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-    + ":" + 
-    (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
-    ;
+  
   
   sClockHHMM = 
     (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
