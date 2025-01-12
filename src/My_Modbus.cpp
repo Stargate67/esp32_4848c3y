@@ -5,15 +5,32 @@
 
 #include "Globals.h"
 #include "My_Modbus.h"
+#include <ModbusIP_ESP8266.h>
+
+ModbusIP mb;
+
+unsigned long prevmillis1;
+unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
+int iState = 0;
+String sExtMaxTimeStp;
+String sExtMinTimeStp;
+//const int iAvgMaxFifo;
+const int iAvgMaxFifo = 10;
+float fAvgFiFo[iAvgMaxFifo];
+int iReadIndex;
+int iStartIndex;
+uint16_t MBresult[NUM_REGS];
+
+uint8_t MBTransaction;
+String sTrend;
+
+lv_obj_t *lblScrolTxt_1;
+lv_obj_t *lblScrolTxt_2;
+lv_obj_t *lblScrolTxt_3;
+
 
 void ReadModbus() {
   
-  uint16_t MBresult[NUM_REGS];
-  uint32_t LastModbusRequest = 0;  // Variable to track the last Modbus request time
-
-  unsigned long prevmillis1;
-  int iState = 0;
-
   mb.task();
 
   if (mb.isConnected(MBremote)) {  
@@ -22,10 +39,11 @@ void ReadModbus() {
       case 0:
       {
         // Read holding registers from Modbus Slave
-        uint8_t transaction = mb.readHreg(MBremote, START_REG, MBresult, NUM_REGS, nullptr, 1);        
+        MBTransaction = mb.readHreg(MBremote, START_REG, MBresult, NUM_REGS, nullptr, 1);      
         prevmillis1 = millis();
         iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
+        if (SERDEBUG) Serial.println("MBTransact.="+String(MBTransaction));
       } 
       break;
 
@@ -53,7 +71,7 @@ void ReadModbus() {
         // Calcul la moyenne 
         float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
 
-        String sTrend = String(" =");
+        sTrend = String(" =");
         if (rTempExt > rAvgTempExt) {
           sTrend = String(" /");
         } else if (rTempExt < rAvgTempExt){
@@ -133,28 +151,29 @@ float fnMin(float fInput) { /* function fnMax */
 }
 
 float fnAverage(float fInput) { /* function fnAverage */
+   
   //Perform average on sensor readings
   float average;
   static float total;
   // subtract the last reading:
-  total = total - readings[iReadIndex];
+  total = total - fAvgFiFo[iReadIndex];
   // read the sensor:
-  readings[iReadIndex] = fInput;
+  fAvgFiFo[iReadIndex] = fInput;
   // add value to total:
-  total = total + readings[iReadIndex];
+  total = total + fAvgFiFo[iReadIndex];
   // handle index
-  iReadIndex = iReadIndex + 1;
-  if (iReadIndex >= numReadings) {
+  iReadIndex ++;
+  if (iReadIndex >= iAvgMaxFifo) {
     iReadIndex = 0;
   }
-  if (iStartIndex < numReadings) {
-    iStartIndex = iStartIndex + 1;
+  if (iStartIndex < iAvgMaxFifo) {
+    iStartIndex++;
   }
 
   // calculate the average:
-  average = total / numReadings;
+  average = total / iAvgMaxFifo;
 
-  if (iStartIndex >= numReadings) {
+  if (iStartIndex >= iAvgMaxFifo) {
     return average;
   } else {
     return fInput;

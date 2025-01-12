@@ -1,36 +1,20 @@
+#include "MainScreen.h"
+#include "Globals.h"
 
-#include <MainScreen.h>
+bool bRelay_4;
 
-void InitUI(){
+uint32_t compteur;
 
-// Initialize the display
-  smartdisplay_init();
+lv_obj_t *btnRelay_1;
+lv_obj_t *btnRelay_2;
+lv_obj_t *btnRelay_3;
+lv_obj_t *btnRelay_4;
 
-  // Set backlight to full brightness
-  smartdisplay_lcd_set_backlight(0.6); // 0 is off, 0.5 is half and 1 is full brightness.
+lv_obj_t *lblBtnRelay_1;
+lv_obj_t *lblBtnRelay_2;
+lv_obj_t *lblBtnRelay_3;
+lv_obj_t *lblBtnRelay_4;
 
-  __attribute__((unused)) auto disp = lv_disp_get_default();
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_90);
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_180);
-  // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
-
-  // Get the active screen
-  scr = lv_scr_act();
-
-  // Set screen background color to dark blue
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x090909), 0);
-
-  // Create the Hello World label
-  lv_CreateIPLabel(scr);
-  lv_CreateClock(scr);
-  lv_CreateAlarm(scr);
-  lv_CreateHorScrollArea(scr);
-  lv_createButton_R1(scr);
-  lv_createButton_R2(scr);
-  lv_createButton_R3(scr);
-  lv_createButton_R4(scr);
-  //lv_example_label_1();
-}
 // test divers widgets
 void lv_example_label_1(void)
 {
@@ -41,9 +25,89 @@ void lv_example_label_1(void)
     lv_obj_align(label2, LV_ALIGN_CENTER, 0, 40);
 }
 
+//************************************************************************************************************/
+//============================================================================================================/
+
+static void my_event_cb_Relay_1 (lv_event_t *e){
+    compteur++;
+    //Serial.println(compteur);
+
+    lv_event_code_t code = lv_event_get_code(e);
+    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
+    if (code == LV_EVENT_RELEASED) {
+
+        if (digitalRead(RELAY_1) == HIGH ) {
+            lv_label_set_text(lblBtnRelay_1, "R2_ON");
+            digitalWrite(RELAY_1, LOW);
+        } else {
+            lv_label_set_text(lblBtnRelay_1, "R2_OFF");
+            digitalWrite(RELAY_1, HIGH);
+        }
+    }
+}
+
+static void my_event_cb_Relay_2 (lv_event_t *e){
+    compteur++;
+    //Serial.println(compteur);
+
+    lv_event_code_t code = lv_event_get_code(e);
+    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
+    if (code == LV_EVENT_RELEASED) {
+
+        if (digitalRead(RELAY_2) == HIGH ) {
+            lv_label_set_text(lblBtnRelay_2, "R2_ON");
+            digitalWrite(RELAY_2, LOW);
+        } else {
+            lv_label_set_text(lblBtnRelay_2, "R2_OFF");
+            digitalWrite(RELAY_2, HIGH);
+        }
+    }
+}
+
+static void my_event_cb_Relay_3 (lv_event_t *e){
+
+    lv_event_code_t code = lv_event_get_code(e);
+    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
+    if (code == LV_EVENT_RELEASED) {
+        compteur++;
+        //Serial.println(compteur);
+
+        if (digitalRead(RELAY_3) == HIGH ) {
+            lv_label_set_text(lblBtnRelay_3, "R3_ON");
+            digitalWrite(RELAY_3, LOW);
+        } else {
+            lv_label_set_text(lblBtnRelay_3, "R3_OFF");
+            digitalWrite(RELAY_3, HIGH);
+        }
+    }
+}
+
+static void my_event_cb_Relay_4 (lv_event_t *e){
+
+    lv_event_code_t code = lv_event_get_code(e);
+    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
+    if (code == LV_EVENT_RELEASED) {
+        compteur++;
+        //Serial.println(compteur);
+
+        if (bRelay_4) {
+            //lv_label_set_text(lblBtnRelay_4, "R4_OFF");
+            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 120, 120, 120 ), 0 );
+            bRelay_4 = false;
+        } else {
+            //lv_label_set_text(lblBtnRelay_4, "R4_ON");
+            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 0, 160, 60 ), 0 );
+            bRelay_4 = true;
+        }
+    }
+}
 
 void lv_CreateHorScrollArea(lv_obj_t *parent){
-    HorScrollArea = lv_obj_create(parent);
+    lv_obj_t * HorScrollArea = lv_obj_create(parent);
     lv_obj_set_size(HorScrollArea, 480, 130);
     lv_obj_set_pos(HorScrollArea, 0, 30);
     lv_obj_set_style_bg_color(HorScrollArea, lv_color_make( 30, 30, 30 ), 0 );
@@ -160,83 +224,34 @@ void lv_CreateClock(lv_obj_t * parent)
     lv_obj_align(ClockLabel, LV_ALIGN_TOP_RIGHT, 0, 0); 
 }
 
-//************************************************************************************************************/
-//============================================================================================================/
 
-static void my_event_cb_Relay_1 (lv_event_t *e){
-    compteur++;
-    //Serial.println(compteur);
+void InitUI(){
 
-    lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+// Initialize the display
+  smartdisplay_init();
 
-    if (code == LV_EVENT_RELEASED) {
+  // Set backlight to full brightness
+  smartdisplay_lcd_set_backlight(0.6); // 0 is off, 0.5 is half and 1 is full brightness.
 
-        if (digitalRead(RELAY_1) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_1, "R2_ON");
-            digitalWrite(RELAY_1, LOW);
-        } else {
-            lv_label_set_text(lblBtnRelay_1, "R2_OFF");
-            digitalWrite(RELAY_1, HIGH);
-        }
-    }
-}
+  __attribute__((unused)) auto disp = lv_disp_get_default();
+  // lv_disp_set_rotation(disp, LV_DISP_ROT_90);
+  // lv_disp_set_rotation(disp, LV_DISP_ROT_180);
+  // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
 
-static void my_event_cb_Relay_2 (lv_event_t *e){
-    compteur++;
-    //Serial.println(compteur);
+  // Get the active screen
+  lv_obj_t * scr = lv_scr_act();
 
-    lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+  // Set screen background color to dark blue
+  lv_obj_set_style_bg_color(scr, lv_color_hex(0x090909), 0);
 
-    if (code == LV_EVENT_RELEASED) {
-
-        if (digitalRead(RELAY_2) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_2, "R2_ON");
-            digitalWrite(RELAY_2, LOW);
-        } else {
-            lv_label_set_text(lblBtnRelay_2, "R2_OFF");
-            digitalWrite(RELAY_2, HIGH);
-        }
-    }
-}
-
-static void my_event_cb_Relay_3 (lv_event_t *e){
-
-    lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
-
-    if (code == LV_EVENT_RELEASED) {
-        compteur++;
-        //Serial.println(compteur);
-
-        if (digitalRead(RELAY_3) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_3, "R3_ON");
-            digitalWrite(RELAY_3, LOW);
-        } else {
-            lv_label_set_text(lblBtnRelay_3, "R3_OFF");
-            digitalWrite(RELAY_3, HIGH);
-        }
-    }
-}
-
-static void my_event_cb_Relay_4 (lv_event_t *e){
-
-    lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
-
-    if (code == LV_EVENT_RELEASED) {
-        compteur++;
-        //Serial.println(compteur);
-
-        if (bRelay_4) {
-            //lv_label_set_text(lblBtnRelay_4, "R4_OFF");
-            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 120, 120, 120 ), 0 );
-            bRelay_4 = false;
-        } else {
-            //lv_label_set_text(lblBtnRelay_4, "R4_ON");
-            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 0, 160, 60 ), 0 );
-            bRelay_4 = true;
-        }
-    }
+  // Create the Hello World label
+  lv_CreateIPLabel(scr);
+  lv_CreateClock(scr);
+  lv_CreateAlarm(scr);
+  lv_CreateHorScrollArea(scr);
+  lv_createButton_R1(scr);
+  lv_createButton_R2(scr);
+  lv_createButton_R3(scr);
+  lv_createButton_R4(scr);
+  //lv_example_label_1();
 }

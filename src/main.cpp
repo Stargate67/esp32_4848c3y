@@ -3,6 +3,7 @@
 #include "time.h"
 #include "My_Modbus.h"
 #include "Globals.h"
+#include "MainScreen.h"
 
 //#include <ModbusIP_ESP8266.h>
 
@@ -13,16 +14,27 @@ struct tm timeinfo;
 
 WiFiClient client;
 
+String sClockHHMMSS;
+String sClockHHMM;
+String sPrintdate;
+String sPrintShortdate;
+
+lv_obj_t *IPLabel;
+lv_obj_t *AlarmLabel;
+lv_obj_t *ClockLabel;
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 static uint8_t conv2d(const char* p) {
   uint8_t v = 0;
   if ('0' <= *p && *p <= '9')
     v = *p - '0';
   return 10 * v + *++p - '0';
 }
+*/
 
 void timeloop (int interval){ // the delay function
   int timer;
@@ -62,6 +74,7 @@ void printLocalTime(){
 }
 
 void startWifi(){
+  
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -132,14 +145,21 @@ void setup()
 void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
-  //ReadModbus(mb);
+  ReadModbus();
 
   if (!getLocalTime(&timeinfo)) {
     lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
     return;
   }
 
-  
+  // Display clock
+  sClockHHMMSS = 
+    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+    + ":" + 
+    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+    + ":" + 
+    (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
+    ;
   
   sClockHHMM = 
     (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
