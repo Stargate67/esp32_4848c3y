@@ -19,7 +19,8 @@ const int iAvgMaxFifo = 10;
 float fAvgFiFo[iAvgMaxFifo];
 int iReadIndex;
 int iStartIndex;
-uint16_t MBresult[NUM_REGS];
+uint16_t MBresultReg1[NUM_REGS];
+uint16_t MBresultOut1[NUM_OUTPUT1];
 
 uint8_t MBTransaction;
 String sTrend;
@@ -39,7 +40,8 @@ void ReadModbus() {
       case 0:
       {
         // Read holding registers from Modbus Slave
-        MBTransaction = mb.readHreg(MBremote, START_REG, MBresult, NUM_REGS, nullptr, 1);      
+        MBTransaction = mb.readHreg(MBremote, START_REG, MBresultReg1, NUM_REGS, nullptr, 1);
+        //MBTransaction = mb.readCoil(MBremote, START_OUTPUT1, MBresultOut1, NUM_OUTPUT1, nullptr, 1);            
         prevmillis1 = millis();
         iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
@@ -63,9 +65,9 @@ void ReadModbus() {
       {
         mb.disconnect(MBremote);
         
-        float rTempSal = round(MBresult[0] * 100.0 / 10.0)/100.0;
+        float rTempSal = round(MBresultReg1[0] * 100.0 / 10.0)/100.0;
         String sTempSal = "T. Sal: " + String(rTempSal) + " °C";
-        float rTmp = (MBresult[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
+        float rTmp = (MBresultReg1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
         String sTempExt = "T. Ext: " + String(rTempExt) + " °C";
         // Calcul la moyenne 
@@ -97,7 +99,7 @@ void ReadModbus() {
             Serial.print("Register ");
             Serial.print(i);
             Serial.print(": ");
-            Serial.println(MBresult[i]);
+            Serial.println(MBresultReg1[i]);
           }
         }
       }
