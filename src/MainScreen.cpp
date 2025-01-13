@@ -5,15 +5,15 @@ bool bRelay_4;
 
 uint32_t compteur;
 
-lv_obj_t *btnRelay_1;
-lv_obj_t *btnRelay_2;
-lv_obj_t *btnRelay_3;
-lv_obj_t *btnRelay_4;
+lv_obj_t *btnR1Chaudiere;
+lv_obj_t *btnR2BoostCh;
+lv_obj_t *btnR3PpeRadiateur;
+lv_obj_t *btnPpePlancher;
 
-lv_obj_t *lblBtnRelay_1;
-lv_obj_t *lblBtnRelay_2;
-lv_obj_t *lblBtnRelay_3;
-lv_obj_t *lblBtnRelay_4;
+lv_obj_t *lblBtnR1Chaudiere;
+lv_obj_t *lblBtnR2BoostCh;
+lv_obj_t *lblBtnR3PpeRadiateur;
+lv_obj_t *lblBtnPpePlancher;
 
 // test divers widgets
 void lv_example_label_1(void)
@@ -28,7 +28,7 @@ void lv_example_label_1(void)
 //************************************************************************************************************/
 //============================================================================================================/
 
-static void my_event_cb_Relay_1 (lv_event_t *e){
+static void my_event_cb_R1Chaudiere (lv_event_t *e){
     compteur++;
     //Serial.println(compteur);
 
@@ -38,16 +38,16 @@ static void my_event_cb_Relay_1 (lv_event_t *e){
     if (code == LV_EVENT_RELEASED) {
 
         if (digitalRead(RELAY_1) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_1, "R2_ON");
+            lv_label_set_text(lblBtnR1Chaudiere, "R2_ON");
             digitalWrite(RELAY_1, LOW);
         } else {
-            lv_label_set_text(lblBtnRelay_1, "R2_OFF");
+            lv_label_set_text(lblBtnR1Chaudiere, "R2_OFF");
             digitalWrite(RELAY_1, HIGH);
         }
     }
 }
 
-static void my_event_cb_Relay_2 (lv_event_t *e){
+static void my_event_cb_R2BoostCh (lv_event_t *e){
     compteur++;
     //Serial.println(compteur);
 
@@ -57,16 +57,18 @@ static void my_event_cb_Relay_2 (lv_event_t *e){
     if (code == LV_EVENT_RELEASED) {
 
         if (digitalRead(RELAY_2) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_2, "R2_ON");
+            //writeCoil(MBremote, 212, true, nullptr, 1);
+
+            lv_label_set_text(lblBtnR2BoostCh, "R2_ON");
             digitalWrite(RELAY_2, LOW);
         } else {
-            lv_label_set_text(lblBtnRelay_2, "R2_OFF");
+            lv_label_set_text(lblBtnR2BoostCh, "R2_OFF");
             digitalWrite(RELAY_2, HIGH);
         }
     }
 }
 
-static void my_event_cb_Relay_3 (lv_event_t *e){
+static void my_event_cb_R3PpeRadiateur (lv_event_t *e){
 
     lv_event_code_t code = lv_event_get_code(e);
     //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
@@ -76,16 +78,16 @@ static void my_event_cb_Relay_3 (lv_event_t *e){
         //Serial.println(compteur);
 
         if (digitalRead(RELAY_3) == HIGH ) {
-            lv_label_set_text(lblBtnRelay_3, "R3_ON");
+            lv_label_set_text(lblBtnR3PpeRadiateur, "R3_ON");
             digitalWrite(RELAY_3, LOW);
         } else {
-            lv_label_set_text(lblBtnRelay_3, "R3_OFF");
+            lv_label_set_text(lblBtnR3PpeRadiateur, "R3_OFF");
             digitalWrite(RELAY_3, HIGH);
         }
     }
 }
 
-static void my_event_cb_Relay_4 (lv_event_t *e){
+static void my_event_cb_PpePlancher (lv_event_t *e){
 
     lv_event_code_t code = lv_event_get_code(e);
     //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
@@ -95,12 +97,12 @@ static void my_event_cb_Relay_4 (lv_event_t *e){
         //Serial.println(compteur);
 
         if (bRelay_4) {
-            //lv_label_set_text(lblBtnRelay_4, "R4_OFF");
-            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 120, 120, 120 ), 0 );
+            //lv_label_set_text(lblBtnPpePlancher, "R4_OFF");
+            lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
             bRelay_4 = false;
         } else {
-            //lv_label_set_text(lblBtnRelay_4, "R4_ON");
-            lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 0, 160, 60 ), 0 );
+            //lv_label_set_text(lblBtnPpePlancher, "R4_ON");
+            lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 0, 160, 60 ), 0 );
             bRelay_4 = true;
         }
     }
@@ -138,59 +140,59 @@ void lv_CreateHorScrollArea(lv_obj_t *parent){
 }
 
 
-void lv_createButton_R1(lv_obj_t *parent){
+void lv_createButton_CHAUD(lv_obj_t *parent){
     // Créer l'interface utilisateur
-    btnRelay_1 = lv_btn_create(parent);    // Créer un bouton
-    lv_obj_set_size(btnRelay_1, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_1, LV_ALIGN_TOP_LEFT, 0, 360);      // Centrer le bouton
-    lv_obj_set_style_bg_color(btnRelay_1, lv_color_make( 90, 90, 90 ), 0 );
+    btnR1Chaudiere = lv_btn_create(parent);    // Créer un bouton
+    lv_obj_set_size(btnR1Chaudiere, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnR1Chaudiere, LV_ALIGN_TOP_LEFT, 0, 360);      // Centrer le bouton
+    lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 90, 90, 90 ), 0 );
 
     // Ajouter une étiquette au bouton
-    lblBtnRelay_1 = lv_label_create(btnRelay_1);
-    lv_label_set_text(lblBtnRelay_1, "CHAUD");
-    lv_obj_center(lblBtnRelay_1);
+    lblBtnR1Chaudiere = lv_label_create(btnR1Chaudiere);
+    lv_label_set_text(lblBtnR1Chaudiere, "CHAUD");
+    lv_obj_center(lblBtnR1Chaudiere);
 
     // Ajouter une action au bouton
-    lv_obj_add_event_cb(btnRelay_1, my_event_cb_Relay_1, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb(btnR1Chaudiere, my_event_cb_R1Chaudiere, LV_EVENT_RELEASED, NULL);
 }
 
-void lv_createButton_R2(lv_obj_t *parent){
-    btnRelay_2 = lv_btn_create(parent);
-    lv_obj_set_size(btnRelay_2, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_2, LV_ALIGN_TOP_LEFT, 120, 360);
-    lv_obj_set_style_bg_color(btnRelay_2, lv_color_make( 100, 100, 100 ), 0 );
+void lv_createButton_BOOSTCh(lv_obj_t *parent){
+    btnR2BoostCh = lv_btn_create(parent);
+    lv_obj_set_size(btnR2BoostCh, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnR2BoostCh, LV_ALIGN_TOP_LEFT, 120, 360);
+    lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 100, 100, 100 ), 0 );
 
-    lblBtnRelay_2 = lv_label_create(btnRelay_2);
-    lv_label_set_text(lblBtnRelay_2, "BOOST");
-    lv_obj_center(lblBtnRelay_2);
+    lblBtnR2BoostCh = lv_label_create(btnR2BoostCh);
+    lv_label_set_text(lblBtnR2BoostCh, "BOOST");
+    lv_obj_center(lblBtnR2BoostCh);
 
-    lv_obj_add_event_cb(btnRelay_2, my_event_cb_Relay_2, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb(btnR2BoostCh, my_event_cb_R2BoostCh, LV_EVENT_RELEASED, NULL);
 }
 
-void lv_createButton_R3(lv_obj_t *parent){
-    btnRelay_3 = lv_btn_create(parent);
-    lv_obj_set_size(btnRelay_3, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_3, LV_ALIGN_TOP_LEFT, 240, 360);
-    lv_obj_set_style_bg_color(btnRelay_3, lv_color_make( 110, 110, 110 ), 0 );
+void lv_createButton_RADIAT(lv_obj_t *parent){
+    btnR3PpeRadiateur = lv_btn_create(parent);
+    lv_obj_set_size(btnR3PpeRadiateur, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnR3PpeRadiateur, LV_ALIGN_TOP_LEFT, 240, 360);
+    lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 110, 110, 110 ), 0 );
 
-    lblBtnRelay_3 = lv_label_create(btnRelay_3);
-    lv_label_set_text(lblBtnRelay_3, "PLANCHER");
-    lv_obj_center(lblBtnRelay_3);
+    lblBtnR3PpeRadiateur = lv_label_create(btnR3PpeRadiateur);
+    lv_label_set_text(lblBtnR3PpeRadiateur, "RADIAT");
+    lv_obj_center(lblBtnR3PpeRadiateur);
 
-    lv_obj_add_event_cb(btnRelay_3, my_event_cb_Relay_3, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb(btnR3PpeRadiateur, my_event_cb_R3PpeRadiateur, LV_EVENT_RELEASED, NULL);
 }
 
-void lv_createButton_R4(lv_obj_t *parent){
-    btnRelay_4 = lv_btn_create(parent);
-    lv_obj_set_size(btnRelay_4, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnRelay_4, LV_ALIGN_TOP_LEFT, 360, 360);
-    lv_obj_set_style_bg_color(btnRelay_4, lv_color_make( 120, 120, 120 ), 0 );
+void lv_createButton_PLANCHER(lv_obj_t *parent){
+    btnPpePlancher = lv_btn_create(parent);
+    lv_obj_set_size(btnPpePlancher, 120, 120);                 // Définir la taille du bouton
+    lv_obj_align(btnPpePlancher, LV_ALIGN_TOP_LEFT, 360, 360);
+    lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
 
-    lblBtnRelay_4 = lv_label_create(btnRelay_4);
-    lv_label_set_text(lblBtnRelay_4, "RADIAT");
-    lv_obj_center(lblBtnRelay_4);
+    lblBtnPpePlancher = lv_label_create(btnPpePlancher);
+    lv_label_set_text(lblBtnPpePlancher, "PLANCHER");
+    lv_obj_center(lblBtnPpePlancher);
 
-    lv_obj_add_event_cb(btnRelay_4, my_event_cb_Relay_4, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb(btnPpePlancher, my_event_cb_PpePlancher, LV_EVENT_RELEASED, NULL);
 }
 
 
@@ -249,9 +251,9 @@ void InitUI(){
   lv_CreateClock(scr);
   lv_CreateAlarm(scr);
   lv_CreateHorScrollArea(scr);
-  lv_createButton_R1(scr);
-  lv_createButton_R2(scr);
-  lv_createButton_R3(scr);
-  lv_createButton_R4(scr);
+  lv_createButton_CHAUD(scr);
+  lv_createButton_BOOSTCh(scr);
+  lv_createButton_RADIAT(scr);
+  lv_createButton_PLANCHER(scr);
   //lv_example_label_1();
 }
