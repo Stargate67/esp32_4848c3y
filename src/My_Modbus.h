@@ -24,8 +24,8 @@ constexpr uint16_t START_OUTPUT1 = 512;     // Starting Output bits Ppes et Chau
 constexpr uint16_t NB_OUTPUT1 = 16;         // Number of Output Bits
 
 constexpr uint16_t MASK_CHAUD = 0x1; // Bit 0
-constexpr uint16_t MASK_BOOST = 0x4000; // Bit 5
-constexpr uint16_t MASK_PPERADIAT = 0x2; // Bit 2
+constexpr uint16_t MASK_BOOST = 0x4000; // Bit 14
+constexpr uint16_t MASK_PPERADIAT = 0x2; // Bit 1
 constexpr uint16_t MASK_PPEPLANCHER = 0x4; // Bit 2
 
 
@@ -53,7 +53,7 @@ Registre 12745 pour les retours Animation Equipements en Marche
 Bit de chaque Mot (de 0 à 15)
 
 CHAUD           = Bit 0  
-BOOST           = bit 5
+BOOST           = bit 14
 PPE Radiateur   = Bit 1
 PPE Plancher    = Bit 2
 
