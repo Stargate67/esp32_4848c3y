@@ -24,9 +24,9 @@ uint16_t MBresultANA1[NB_REGS];
 uint16_t MBresultANIM1[NB_REGS_ANI];
 bool MBresultCL1[NB_OUTPUT1];
 
-uint8_t MBTransactionANA1; // Transcation for HRs Range 1
-uint8_t MBTransactionANIM1; // Transcation for HRs Range 1
-uint8_t MBTransactionCL1; // Transcation for Coils Range 1
+//uint16_t MBTransactionANA1; // Transcation for HRs Range 1
+//uint16_t MBTransactionANIM1; // Transcation for HRs Range 1
+//uint16_t MBTransactionCL1; // Transcation for Coils Range 1
 String sTrend;
 
 lv_obj_t *lblScrolTxt_1;
@@ -49,18 +49,25 @@ void ReadModbus() {
 
       case 5:
       { 
-        mb.task();
-        delay(5);
         // Read holding registers from Modbus Slave
-        MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANI, MBresultANIM1, NB_REGS_ANI, nullptr, 1);
-        //MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);    
-        
+        uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANI, MBresultANIM1, NB_REGS_ANI, nullptr, 1);
+        //uint16_t MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);
+
+        mb.task();
+        //delay(5);
+        prevmillis1 = millis();
+        iState = 20;
+        if (SERDEBUG) Serial.println("iState="+String(iState));
+
+/*
         if (SERDEBUG) Serial.println("iState="+String(iState));
         if (SERDEBUG) Serial.println("MBTransact.="+String(MBTransactionANA1));
         if (SERDEBUG) Serial.println("MBTransact.="+String(MBTransactionANIM1));
+
         // Wait for the transaction to complete
-        if (mb.isTransaction(MBTransactionANA1) || mb.isTransaction(MBTransactionCL1) || mb.isTransaction(MBTransactionANIM1)) {
+        if (mb.isTransaction(MBTransactionANA1) || mb.isTransaction(MBTransactionANIM1)) {
+          mb.task();
           if (millis() >= TransactMillis1 +2000){ // TimeOut Transaction
             lv_label_set_text(AlarmLabel, "Erreur transaction Modbus"); // A faire.. rajouter le code erreur Modbus
             LastModbusRequest = millis();
@@ -74,8 +81,9 @@ void ReadModbus() {
           iState = 20;
           if (SERDEBUG) Serial.println("iState="+String(iState));
           if (SERDEBUG) Serial.println("MBTransactHR="+String(MBTransactionANA1));
-          //if (SERDEBUG) Serial.println("MBTransactCoils="+String(MBTransactionANA1));
+          //if (SERDEBUG) Serial.println("MBTransactCoils="+String(MBTransactionCL1));
         }
+        */
       } 
       break;
 
@@ -93,7 +101,7 @@ void ReadModbus() {
       // Lecture des valeurs dans le buffer MB et mise ne forme
       case 20:
       {
-        mb.disconnect(MBremote);
+        //mb.disconnect(MBremote);
         
         float rTempSal = round(MBresultANA1[0] * 100.0 / 10.0)/100.0;
         String sTempSal = "T. Sal: " + String(rTempSal) + " °C";
@@ -110,8 +118,8 @@ void ReadModbus() {
           sTrend = String(" \\");
         }
         lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
-        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "        " + String(fnMin(rTempExt)) + " °C" + "            " + String(fnMax(rTempExt)) + " °C").c_str());
-        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "         " + sExtMinTimeStp + "              " + sExtMaxTimeStp).c_str());
+        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "          " + String(fnMax(rTempExt)) + " °C").c_str());
+        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "            " + sExtMaxTimeStp).c_str());
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_PPERADIAT) {

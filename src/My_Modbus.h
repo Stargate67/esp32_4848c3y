@@ -18,7 +18,7 @@ constexpr uint16_t START_REG = 12688;       // Starting holding register
 constexpr uint16_t NB_REGS = 11;           // Number of holding registers to read
 
 constexpr uint16_t START_REG_ANI = 12745;       // Starting holding register
-constexpr uint16_t NB_REGS_ANI = 6;           // Number of holding registers to read  y compris les Alarmes
+constexpr uint16_t NB_REGS_ANI = 5;           // Number of holding registers to read  y compris les Alarmes
 
 constexpr uint16_t START_OUTPUT1 = 512;     // Starting Output bits Ppes et Chaudière
 constexpr uint16_t NB_OUTPUT1 = 16;         // Number of Output Bits
@@ -53,7 +53,8 @@ Registre 12745 pour les retours Animation Equipements en Marche
 Bit de chaque Mot (de 0 à 15)
 
 CHAUD           = Bit 0  
-BOOST           = bit 5
+BOOST           = bit 5 pour BPs M/A
+BOOST           = bit 14 pour animation
 PPE Radiateur   = Bit 1
 PPE Plancher    = Bit 2
 
