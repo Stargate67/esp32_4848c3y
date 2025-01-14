@@ -20,10 +20,7 @@ extern float fAvgFiFo[];
 extern int iReadIndex;
 extern int iStartIndex;
 
-extern const IPAddress MBremote;   // Address of Internet Box 
-extern const uint16_t START_REG;       // Starting holding register
-extern const uint16_t NB_REGS;           // Number of holding registers to read
-extern const uint16_t MB_READ_INTERVAL;         // Interval between reads (in milliseconds)
+const IPAddress MBremote(77, 204, 15, 6);   // Address of Internet Box => 192.168.0.105 PLC WAGO
 
 extern lv_obj_t *btnR1Chaudiere;
 extern lv_obj_t *btnR2BoostCh;
@@ -48,3 +45,67 @@ extern lv_obj_t *HorScrollArea;
 lv_obj_t *scr;
 */
 
+constexpr uint16_t MB_READ_INTERVAL = 1000; 
+
+constexpr uint16_t START_REG = 12688;       // Starting holding register
+constexpr uint16_t NB_REGS = 11;           // Number of holding registers to read
+
+
+constexpr uint16_t MASK_CHAUD = 0x1; // Bit 0
+constexpr uint16_t MASK_BOOST_ANIM = 0x4000; // Bit 14  Pourretour etat BOOST
+constexpr uint16_t MASK_BOOST_MA = 0x10; // Bit 5   Pour Commande Marche Arret
+
+
+constexpr uint16_t MASK_PPERADIAT = 0x2; // Bit 1
+constexpr uint16_t MASK_PPEPLANCHER = 0x4; // Bit 2
+
+//constexpr uint16_t START_REG_BP_MARCHE = 12743; // registre des cde Marches bit à bit
+//constexpr uint16_t START_REG_BP_ARRET = 12744; // registre des cde Arret bit à bit
+
+constexpr uint16_t BP_MARCHE_CHAUD = 4112; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_CHAUD = 4128; // Bobine cde Arret
+
+constexpr uint16_t BP_MARCHE_BOOST = 4113; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_BOOST = 4129; // Bobine cde Arret
+
+constexpr uint16_t BP_MARCHE_RADIAT = 4114; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_RADIAT = 4130; // Bobine cde Arret
+
+constexpr uint16_t BP_MARCHE_PLANCHER = 4115; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_PLANCHER = 4131; // Bobine cde Arret
+
+constexpr uint16_t START_REG_ANIM = 12745;       // Retour etat pour animation pompes, ch. lampes, etc 
+constexpr uint16_t NB_REGS_ANIM = 6;           // Number of holding registers to read  y compris les Alarmes
+
+//constexpr uint16_t START_OUTPUT1 = 512;     // Starting Output bits Ppes et Chaudière
+//constexpr uint16_t NB_OUTPUT1 = 16;         // Number of Output Bits
+
+
+//Lecture des Bits de Sortie 
+// de "000512   , 16 ); 
+
+//$OutPuts["000514"] =  Porte de Garage
+//$OutPuts["000514"] =  Ppe Radiateur
+//$OutPuts["000515"] =  Ppe Plancher
+//$OutPuts["000516"] =  Vanne Ouvre
+//$OutPuts["000517"] =  Vanne ferme
+//$OutPuts["000518"] =  Chaudière
+//$OutPuts["000519"] =  Boot Chaudière
+
+//Ou bien Registre 12745 pour les retours Animation 
+// Voir ci-dessous
+
+/*
+ === Ecriture Modbus ===
+
+Registre 12745 pour les retours Animation Equipements en Marche
+
+Bit de chaque Mot (de 0 à 15)
+
+CHAUD           = Bit 0  
+BOOST           = bit 5 pour BPs M/A
+BOOST           = bit 14 pour animation
+PPE Radiateur   = Bit 1
+PPE Plancher    = Bit 2
+
+*/

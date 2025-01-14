@@ -13,16 +13,16 @@ unsigned long prevmillis1;
 unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
 unsigned long TransactMillis1;    // Timeout Transaction
 int iState = 0;
-String sExtMaxTimeStp;
-String sExtMinTimeStp;
+String sExtMaxTimeStp = "NA:NA";
+String sExtMinTimeStp = "NA:NA";
 //const int iAvgMaxFifo;
 const int iAvgMaxFifo = 10;
 float fAvgFiFo[iAvgMaxFifo];
 int iReadIndex;
 int iStartIndex;
 uint16_t MBresultANA1[NB_REGS];
-uint16_t MBresultANIM1[NB_REGS_ANI];
-bool MBresultCL1[NB_OUTPUT1];
+uint16_t MBresultANIM1[NB_REGS_ANIM];
+//bool MBresultCL1[NB_OUTPUT1];
 
 //uint16_t MBTransactionANA1; // Transcation for HRs Range 1
 //uint16_t MBTransactionANIM1; // Transcation for HRs Range 1
@@ -50,9 +50,12 @@ void ReadModbus() {
       case 5:
       { 
         // Read holding registers from Modbus Slave
-        uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANI, MBresultANIM1, NB_REGS_ANI, nullptr, 1);
+        //uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        //uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
         //uint16_t MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);
+
+        mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
         mb.task();
         //delay(5);
@@ -118,34 +121,36 @@ void ReadModbus() {
           sTrend = String(" \\");
         }
         lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
-        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "          " + String(fnMax(rTempExt)) + " °C").c_str());
-        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "            " + sExtMaxTimeStp).c_str());
+        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "       " + String(fnMax(rTempExt)) + " °C").c_str());
+        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "       " + sExtMaxTimeStp).c_str());
 
         // Traitement animation des BPs sur retour MBus
-        if (MBresultANIM1[0] & MASK_PPERADIAT) {
-          lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 0, 160, 60  ), 0 );
-        } else {
-          lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 100, 100, 100 ), 0 );
-        }
-        
-        if (MBresultANIM1[0] & MASK_PPEPLANCHER) {
-          lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 0, 160, 60  ), 0 );
-        } else {
-          lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 100, 100, 100 ), 0 );
-        }
-          
         if (MBresultANIM1[0] & MASK_CHAUD) {
-          lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 0, 160, 60  ), 0 );
+          lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 0, 160, 60 ), 0 );
         } else {
           lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 100, 100, 100 ), 0 );
         }
 
-        if (MBresultANIM1[0] & MASK_BOOST) {
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 60  ), 0 );
+        if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 60 ), 0 );
+          digitalWrite(RELAY_2, HIGH);
         } else {
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 100, 100, 100 ), 0 );
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
+          digitalWrite(RELAY_2, LOW);
         }
 
+        if (MBresultANIM1[0] & MASK_PPERADIAT) {
+          lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 0, 160, 60 ), 0 );
+        } else {
+          lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 120, 120, 120 ), 0 );
+        }
+        
+        if (MBresultANIM1[0] & MASK_PPEPLANCHER) {
+          lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 0, 160, 60 ), 0 );
+        } else {
+          lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
+        }
+          
         // ******  DEBUG  ***********
         if (SERDEBUG) { 
           Serial.print("Avg T.Ext. = ");
@@ -167,15 +172,17 @@ void ReadModbus() {
           }
           Serial.println(" ");
           Serial.println("Coils Values:");
+          /*
           for (int i = 0; i < NB_OUTPUT1; i++) {
             Serial.print("Coil ");
             Serial.print(i);
             Serial.print(": ");
             Serial.println(MBresultCL1[i]);
           }
+          */
           Serial.println(" ");
           Serial.println("Animations Values:");
-          for (int i = 0; i < NB_REGS_ANI; i++) {
+          for (int i = 0; i < NB_REGS_ANIM; i++) {
             Serial.print("Registers ");
             Serial.print(i);
             Serial.print(": ");
