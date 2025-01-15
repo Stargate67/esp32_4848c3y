@@ -95,13 +95,15 @@ static void my_event_cb_R3PpeRadiateur (lv_event_t *e){
         compteur++;
         if (bCdeRelaisR3) {
             mb.writeCoil(MBremote, BP_ARRET_RADIAT, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_ARRET_RADIAT, 0, nullptr, 1);
+            mb.task();
             bCdeRelaisR3 = 0;
         } else {
             mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 0, nullptr, 1);
+            mb.task();
             bCdeRelaisR3 = 1;
         }
+        mb.writeCoil(MBremote, BP_ARRET_RADIAT, 0, nullptr, 1);
+        mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 0, nullptr, 1);
         mb.task();
         if (SERDEBUG) Serial.println("BP RADIAT: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_3));
     }
@@ -114,16 +116,17 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
 
     if (code == LV_EVENT_RELEASED) {
         compteur++;
-
         if (bRelay_4) {
             mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 0, nullptr, 1);
+            mb.task();
             bRelay_4 = 0;
         } else {
             mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 0, nullptr, 1);
+            mb.task();
             bRelay_4 = 1;
         }
+        mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 0, nullptr, 1);
+        mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 0, nullptr, 1);
         mb.task();
         if (SERDEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
     }
