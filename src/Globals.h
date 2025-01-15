@@ -5,6 +5,8 @@
 
 #define SERDEBUG false
 
+#define BP_DEBUG true
+
 class Tempos{
         unsigned long uInitTime;
         unsigned long uPreset;
@@ -95,20 +97,27 @@ constexpr uint16_t MASK_PPEPLANCHER = 0x4; // Bit 2
 //constexpr uint16_t START_REG_BP_MARCHE = 12743; // registre des cde Marches bit à bit
 //constexpr uint16_t START_REG_BP_ARRET = 12744; // registre des cde Arret bit à bit
 
-constexpr uint16_t BP_MARCHE_CHAUD = 4112; // Bobine cde Marche
-constexpr uint16_t BP_ARRET_CHAUD = 4128; // Bobine cde Arret
+constexpr uint16_t BP_MARCHE_CHAUD = 19568; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_CHAUD = 19584; // Bobine cde Arret
 
-constexpr uint16_t BP_MARCHE_BOOST = 4113; // Bobine cde Marche
-constexpr uint16_t BP_ARRET_BOOST = 4129; // Bobine cde Arret
+constexpr uint16_t BP_MARCHE_BOOST = 19573; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_BOOST = 19589; // Bobine cde Arret
 
-constexpr uint16_t BP_MARCHE_RADIAT = 4114; // Bobine cde Marche
-constexpr uint16_t BP_ARRET_RADIAT = 4130; // Bobine cde Arret
+constexpr uint16_t BP_MARCHE_RADIAT = 19569; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_RADIAT = 19585; // Bobine cde Arret
 
-constexpr uint16_t BP_MARCHE_PLANCHER = 4115; // Bobine cde Marche
-constexpr uint16_t BP_ARRET_PLANCHER = 4131; // Bobine cde Arret
+constexpr uint16_t BP_MARCHE_PLANCHER = 19570; // Bobine cde Marche
+constexpr uint16_t BP_ARRET_PLANCHER = 19586; // Bobine cde Arret
 
 constexpr uint16_t START_REG_ANIM = 12745;       // Retour etat pour animation pompes, ch. lampes, etc 
 constexpr uint16_t NB_REGS_ANIM = 6;           // Number of holding registers to read  y compris les Alarmes
+
+constexpr uint16_t BP_LAMPE_SSOL = 19488;    // BP Marche lampe sous sol
+constexpr uint16_t BP_LAMPE_RDC = 19489;     // BP Marche lampe RdC
+constexpr uint16_t BP_LAMPE_1ETAGE = 19490;  // BP Marche lampe 1erEtage
+
+constexpr uint16_t BP_OUVERT_GARAGE = 19491;  // BP ouverture porte de garage
+constexpr uint16_t PORTE_GARAGE1_FERME = 19492;  // Etat porte de garage fermé
 
 //Lecture des Bits de Sortie 
 // de "000512   , 16 ); 

@@ -62,7 +62,7 @@ void ReadModbus() {
         mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
         mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
-        mb.task();
+        //mb.task();
         //delay(5);
         prevmillis1 = millis();
         iState = 20;

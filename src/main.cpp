@@ -156,6 +156,7 @@ void loop() {
   if (TimerScan10ms.Q()){ // 10ms
     ReadModbus();
     TimerScan10ms.Reset();
+    mb.task(); // Tache principale Traitement ModbusTCP
   }
 
   // ========  Main Tasks at 100ms  =========== 
