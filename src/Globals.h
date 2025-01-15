@@ -3,7 +3,20 @@
 #include <ModbusIP_ESP8266.h>
 #include "esp32_smartdisplay.h"
 
-#define SERDEBUG true
+#define SERDEBUG false
+
+class Tempos{
+        unsigned long uInitTime;
+        unsigned long uPreset;
+    public:
+        Tempos(unsigned long Preset); // Constructeur
+        bool Q();
+        bool Q(unsigned long Preset);
+        bool Preset(unsigned long Preset);
+        bool Reset();
+};
+
+void Relays();
 
 extern ModbusIP mb;  //ModbusIP object
 
@@ -20,6 +33,20 @@ extern float fAvgFiFo[];
 extern int iReadIndex;
 extern int iStartIndex;
 
+extern bool bChaudiere;    // Modbus Etat Marche Chaudière
+extern bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
+extern bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
+extern bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
+
+extern bool bCdeRelaisR1;  // demande de marche Relais 1
+extern bool bCdeRelaisR2;  // demande de marche Relais 2
+extern bool bCdeRelaisR3;  // demande de marche Relais 3
+
+extern bool bRelay_1;
+extern bool bRelay_2;
+extern bool bRelay_3;
+extern bool bRelay_4;
+
 const IPAddress MBremote(77, 204, 15, 6);   // Address of Internet Box => 192.168.0.105 PLC WAGO
 
 extern lv_obj_t *btnR1Chaudiere;
@@ -28,8 +55,14 @@ extern lv_obj_t *btnR3PpeRadiateur;
 extern lv_obj_t *btnPpePlancher;
 
 extern lv_obj_t *lblBtnR1Chaudiere;
+extern lv_obj_t *lblBtnR1small;
+
 extern lv_obj_t *lblBtnR2BoostCh;
+extern lv_obj_t *lblBtnR2small;
+
 extern lv_obj_t *lblBtnR3PpeRadiateur;
+extern lv_obj_t *lblBtnR3small;
+
 extern lv_obj_t *lblBtnPpePlancher;
 
 extern lv_obj_t *lblScrolTxt_1;
@@ -77,14 +110,10 @@ constexpr uint16_t BP_ARRET_PLANCHER = 4131; // Bobine cde Arret
 constexpr uint16_t START_REG_ANIM = 12745;       // Retour etat pour animation pompes, ch. lampes, etc 
 constexpr uint16_t NB_REGS_ANIM = 6;           // Number of holding registers to read  y compris les Alarmes
 
-//constexpr uint16_t START_OUTPUT1 = 512;     // Starting Output bits Ppes et Chaudière
-//constexpr uint16_t NB_OUTPUT1 = 16;         // Number of Output Bits
-
-
 //Lecture des Bits de Sortie 
 // de "000512   , 16 ); 
 
-//$OutPuts["000514"] =  Porte de Garage
+//$OutPuts["000513"] =  Porte de Garage
 //$OutPuts["000514"] =  Ppe Radiateur
 //$OutPuts["000515"] =  Ppe Plancher
 //$OutPuts["000516"] =  Vanne Ouvre

@@ -11,9 +11,19 @@ lv_obj_t *btnR3PpeRadiateur;
 lv_obj_t *btnPpePlancher;
 
 lv_obj_t *lblBtnR1Chaudiere;
+lv_obj_t *lblBtnR1small;
+
 lv_obj_t *lblBtnR2BoostCh;
+lv_obj_t *lblBtnR2small;
+
 lv_obj_t *lblBtnR3PpeRadiateur;
+lv_obj_t *lblBtnR3small;
+
 lv_obj_t *lblBtnPpePlancher;
+
+bool bCdeRelaisR1;  // demande de marche Relais 1
+bool bCdeRelaisR2;  // demande de marche Relais 2
+bool bCdeRelaisR3;  // demande de marche Relais 3
 
 // test divers widgets
 void lv_example_label_1(void)
@@ -36,15 +46,17 @@ static void my_event_cb_R1Chaudiere (lv_event_t *e){
 
     if (code == LV_EVENT_RELEASED) {
 
-        if (digitalRead(RELAY_1)) {
-            mb.writeCoil(MBremote, BP_ARRET_BOOST, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_ARRET_BOOST, 0, nullptr, 1);
-            digitalWrite(RELAY_1, LOW);
+        if (bCdeRelaisR1) {
+            mb.writeCoil(MBremote, BP_ARRET_CHAUD, 1, nullptr, 1);
+            mb.task();
+            bCdeRelaisR1 = 0;
         } else {
-            mb.writeCoil(MBremote, BP_MARCHE_BOOST, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_MARCHE_BOOST, 0, nullptr, 1);
-            digitalWrite(RELAY_1, HIGH);
+            mb.writeCoil(MBremote, BP_MARCHE_CHAUD, 1, nullptr, 1);
+            mb.task();
+            bCdeRelaisR1 = 1;
         }
+        mb.writeCoil(MBremote, BP_ARRET_CHAUD, 0, nullptr, 1);
+        mb.writeCoil(MBremote, BP_MARCHE_CHAUD, 0, nullptr, 1);
         mb.task();
         if (SERDEBUG) Serial.println("BP CHAUD: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_1));
     }
@@ -52,18 +64,23 @@ static void my_event_cb_R1Chaudiere (lv_event_t *e){
 
 static void my_event_cb_R2BoostCh (lv_event_t *e){
     compteur++;
+    if (SERDEBUG) Serial.println("compteur=" + String(compteur));
+
     lv_event_code_t code = lv_event_get_code(e);
     //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
     if (code == LV_EVENT_RELEASED) {
-        if (digitalRead(RELAY_2) ) {
+        if ( bCdeRelaisR2 ) {
             mb.writeCoil(MBremote, BP_ARRET_BOOST, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_ARRET_BOOST, 0, nullptr, 1);
-            digitalWrite(RELAY_2, LOW);
+            mb.task();
+            bCdeRelaisR2 = 0;
         } else {
             mb.writeCoil(MBremote, BP_MARCHE_BOOST, 1, nullptr, 1);
-            mb.writeCoil(MBremote, BP_MARCHE_BOOST, 0, nullptr, 1);
-            digitalWrite(RELAY_2, HIGH);
+            mb.task();
+            bCdeRelaisR2 = 1;
         }
+        mb.writeCoil(MBremote, BP_ARRET_BOOST, 0, nullptr, 1);
+        mb.writeCoil(MBremote, BP_MARCHE_BOOST, 0, nullptr, 1);
         mb.task();
         if (SERDEBUG) Serial.println("BP BOOST: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_2));
     }
@@ -76,14 +93,14 @@ static void my_event_cb_R3PpeRadiateur (lv_event_t *e){
 
     if (code == LV_EVENT_RELEASED) {
         compteur++;
-        if (digitalRead(RELAY_3) ) {
+        if (bCdeRelaisR3) {
             mb.writeCoil(MBremote, BP_ARRET_RADIAT, 1, nullptr, 1);
             mb.writeCoil(MBremote, BP_ARRET_RADIAT, 0, nullptr, 1);
-            digitalWrite(RELAY_3, LOW);
+            bCdeRelaisR3 = 0;
         } else {
             mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 1, nullptr, 1);
             mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 0, nullptr, 1);
-            digitalWrite(RELAY_3, HIGH);
+            bCdeRelaisR3 = 1;
         }
         mb.task();
         if (SERDEBUG) Serial.println("BP RADIAT: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_3));
@@ -101,11 +118,11 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
         if (bRelay_4) {
             mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 1, nullptr, 1);
             mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 0, nullptr, 1);
-            bRelay_4 = false;
+            bRelay_4 = 0;
         } else {
             mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 1, nullptr, 1);
             mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 0, nullptr, 1);
-            bRelay_4 = true;
+            bRelay_4 = 1;
         }
         mb.task();
         if (SERDEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
@@ -156,6 +173,12 @@ void lv_createButton_CHAUD(lv_obj_t *parent){
     lv_label_set_text(lblBtnR1Chaudiere, "CHAUD");
     lv_obj_center(lblBtnR1Chaudiere);
 
+    // Ajouter une petite étiquette au bouton
+    lblBtnR1small= lv_label_create(btnR1Chaudiere);
+    lv_obj_set_style_text_font(lblBtnR1small, &lv_font_montserrat_16, 0);
+    lv_obj_align(lblBtnR1small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
+    lv_label_set_text(lblBtnR1small, "R1=0");
+
     // Ajouter une action au bouton
     lv_obj_add_event_cb(btnR1Chaudiere, my_event_cb_R1Chaudiere, LV_EVENT_RELEASED, NULL);
 }
@@ -170,6 +193,12 @@ void lv_createButton_BOOSTCh(lv_obj_t *parent){
     lv_label_set_text(lblBtnR2BoostCh, "BOOST");
     lv_obj_center(lblBtnR2BoostCh);
 
+   // Ajouter une petite étiquette au bouton
+    lblBtnR2small= lv_label_create(btnR2BoostCh);
+    lv_obj_set_style_text_font(lblBtnR2small, &lv_font_montserrat_16, 0);
+    lv_obj_align(lblBtnR2small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
+    lv_label_set_text(lblBtnR2small, "R2=0");    
+    
     lv_obj_add_event_cb(btnR2BoostCh, my_event_cb_R2BoostCh, LV_EVENT_RELEASED, NULL);
 }
 
@@ -183,6 +212,12 @@ void lv_createButton_RADIAT(lv_obj_t *parent){
     lv_label_set_text(lblBtnR3PpeRadiateur, "RADIAT");
     lv_obj_center(lblBtnR3PpeRadiateur);
 
+   // Ajouter une petite étiquette au bouton
+    lblBtnR3small= lv_label_create(btnR3PpeRadiateur);
+    lv_obj_set_style_text_font(lblBtnR3small, &lv_font_montserrat_16, 0);
+    lv_obj_align(lblBtnR3small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
+    lv_label_set_text(lblBtnR3small, "R3=0");    
+    
     lv_obj_add_event_cb(btnR3PpeRadiateur, my_event_cb_R3PpeRadiateur, LV_EVENT_RELEASED, NULL);
 }
 

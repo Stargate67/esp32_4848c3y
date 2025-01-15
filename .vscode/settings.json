@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "esp_lcd_touch.h": "c"
+        "esp_lcd_touch.h": "c",
+        "random": "cpp"
     }
 }

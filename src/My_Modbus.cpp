@@ -33,6 +33,11 @@ lv_obj_t *lblScrolTxt_1;
 lv_obj_t *lblScrolTxt_2;
 lv_obj_t *lblScrolTxt_3;
 
+bool bChaudiere;    // Modbus Etat Marche Chaudière
+bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
+bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
+bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
+
 void ReadModbus() {
   
   //mb.task();
@@ -126,28 +131,42 @@ void ReadModbus() {
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_CHAUD) {
+          bChaudiere=1;
+          bCdeRelaisR1=1;
           lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 0, 160, 60 ), 0 );
         } else {
+          bChaudiere=0;
+          bCdeRelaisR1=0;
           lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 100, 100, 100 ), 0 );
         }
 
         if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
+          bBoostChaud = 1;
+          bCdeRelaisR2 = 1;
           lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 60 ), 0 );
-          digitalWrite(RELAY_2, HIGH);
         } else {
+          bBoostChaud = 0;
+          bCdeRelaisR2 = 0;
           lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
-          digitalWrite(RELAY_2, LOW);
         }
 
         if (MBresultANIM1[0] & MASK_PPERADIAT) {
+          bPpeRadiat = 1;
+          bCdeRelaisR3 = 1;
           lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 0, 160, 60 ), 0 );
         } else {
+          bPpeRadiat = 0;
+          bCdeRelaisR3 = 0;
           lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 120, 120, 120 ), 0 );
         }
         
         if (MBresultANIM1[0] & MASK_PPEPLANCHER) {
+          bPpePlancher = 1;
+          bRelay_4 = 1;
           lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 0, 160, 60 ), 0 );
         } else {
+          bPpePlancher = 0;
+          bRelay_4 = 0;
           lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
         }
           

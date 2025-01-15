@@ -23,6 +23,10 @@ lv_obj_t *IPLabel;
 lv_obj_t *AlarmLabel;
 lv_obj_t *ClockLabel;
 
+Tempos TimerScan10ms(10);
+Tempos TimerScan50ms(50);
+Tempos TimerScan100ms(100);
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,90 +146,57 @@ void setup()
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
 
+
+
 void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
-  ReadModbus();
 
-  if (!getLocalTime(&timeinfo)) {
-    lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
-    return;
+  // ========  Main Tasks at 10ms  =========== 
+  if (TimerScan10ms.Q()){ // 10ms
+    ReadModbus();
+    TimerScan10ms.Reset();
   }
 
-  // Display clock
-  sClockHHMMSS = 
-    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-    + ":" + 
-    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-    + ":" + 
-    (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
-    ;
-  
-  sClockHHMM = 
-    (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-    + ":" + 
-    (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-    ;
-  lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
+  // ========  Main Tasks at 100ms  =========== 
+  if (TimerScan100ms.Q()){ // 10ms
+    Relays();
+    
+    if (!getLocalTime(&timeinfo)) {
+      lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
+      return;
+    }
 
-  // Display Date 
-  if (timeinfo.tm_mday != TmpDay) {
-    //printLocalTime();
-    sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
+    // Display clock
+    sClockHHMMSS = 
+      (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+      + ":" + 
+      (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+      + ":" + 
+      (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
+      ;
+    
+    sClockHHMM = 
+      (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+      + ":" + 
+      (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+      ;
+    lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
 
-    sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
+    // Display Date 
+    if (timeinfo.tm_mday != TmpDay) {
+      //printLocalTime();
+      sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
 
-    if (SERDEBUG) Serial.println("Date: " + sPrintdate);
-    TmpDay = timeinfo.tm_mday;
+      sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
 
+      if (SERDEBUG) Serial.println("Date: " + sPrintdate);
+      TmpDay = timeinfo.tm_mday;
+    }
+
+
+
+  TimerScan100ms.Reset();
   }
 }
-
-/*
-  stext2.pushSprite(0, 56);
-  //delay(5); // sped it up a little
-  stext2.scroll(-1);    // scroll stext 1 pixel left, up/down default is 0
-  tcount--;
-  if (tcount <=0)
-  { // If we have scrolled 240 pixels then redraw text
-    tcount = 450;
-
-    // print date
-    stext2.setTextColor(TFT_GREENYELLOW, TFT_BLACK);
-    stext2.drawString(sPrintdate, 240, 0, 4);
-    // Temp Ext
-    stext2.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    if (rTempExt >= 10.0 ) {
-      stext2.setTextColor(TFT_GREEN, TFT_BLACK);
-    } else if (rTempExt >= 25.0) {
-      stext2.setTextColor(TFT_ORANGE, TFT_BLACK);
-    } else if (rTempExt >= 30.0) {
-      stext2.setTextColor(TFT_RED, TFT_BLACK);
-    }
-    stext2.drawString((sTempExt + sTrend).c_str(), 240, 25, 4);
-
-    // Temp Salon
-    stext2.setTextColor(TFT_BLUE, TFT_BLACK);
-    stext2.drawString(sTempSal.c_str(), 240, 50, 4);
-
-    // Temp Min
-    stext2.setTextColor(TFT_ORANGE, TFT_BLACK);
-    stext2.drawString("Ext. Min", 450, 0, 4);
-
-    stext2.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    stext2.drawString(String(fnMin(rTempExt)) + " " + String((char)167) + "C", 450, 25, 4);
-
-    stext2.drawString((sExtMinTimeStp), 450, 50, 4);
-
-    // Temp Max
-    stext2.setTextColor(TFT_ORANGE, TFT_BLACK);
-    stext2.drawString("Ext. Max", 550, 0, 4);
-
-    stext2.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    stext2.drawString(String(fnMax(rTempExt)) + " " + String((char)167) + "C", 550, 25, 4);
-
-    stext2.drawString((sExtMaxTimeStp), 550, 50, 4);
-
-  }
-*/
 
