@@ -115,7 +115,7 @@ void ReadModbus() {
         String sTempSal = "T. Sal: " + String(rTempSal) + " °C";
         float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        String sTempExt = "T. Ext: " + String(rTempExt) + " °C";
+        String sTempExt = "T. Ext:   " + String(rTempExt) + " °C";
         // Calcul la moyenne 
         float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
 
@@ -125,9 +125,12 @@ void ReadModbus() {
         } else if (rTempExt < rAvgTempExt){
           sTrend = String(" \\");
         }
-        lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
-        lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "       " + String(fnMax(rTempExt)) + " °C").c_str());
-        lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "       " + sExtMaxTimeStp).c_str());
+        //lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
+        //lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "       " + String(fnMax(rTempExt)) + " °C").c_str());
+        
+        //lv_label_set_text(lblScrolTxt_2, (sTempExt + sTrend + " Min: " + String(fnMin(rTempExt)) + " °C" + " Max: " + String(fnMax(rTempExt)) + " °C").c_str());
+
+        //lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "       " + sExtMaxTimeStp).c_str());
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_CHAUD) {
@@ -143,7 +146,7 @@ void ReadModbus() {
         if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
           bBoostChaud = 1;
           bCdeRelaisR2 = 1;
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 60 ), 0 );
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 0 ), 0 );
         } else {
           bBoostChaud = 0;
           bCdeRelaisR2 = 0;

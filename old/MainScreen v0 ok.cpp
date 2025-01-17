@@ -25,11 +25,6 @@ bool bCdeRelaisR1;  // demande de marche Relais 1
 bool bCdeRelaisR2;  // demande de marche Relais 2
 bool bCdeRelaisR3;  // demande de marche Relais 3
 
-static const lv_color_t Btn_grad_colors[2] = {
-    LV_COLOR_MAKE(10, 10, 10),
-    LV_COLOR_MAKE(30, 30, 30),
-};
-
 // test divers widgets
 void lv_example_label_1(void)
 {
@@ -129,42 +124,23 @@ void lv_CreateHorScrollArea(lv_obj_t *parent){
     //lv_obj_set_style_outline_width(HorScrollArea, 0, 0 );
  
     // Ajouter une étiquette au bouton
-    /*
     lblScrolTxt_1 = lv_label_create(HorScrollArea);
     lv_label_set_text(lblScrolTxt_1, "lblScrolTxt_1  init");
     lv_obj_set_style_text_font(lblScrolTxt_1, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(lblScrolTxt_1, lv_color_make(2, 40, 209), 0); 
     lv_obj_align(lblScrolTxt_1, LV_ALIGN_TOP_LEFT, 0, 10); 
-*/
-    static lv_anim_t animation_template;
-    static lv_style_t label_style;
-
-    lv_anim_init(&animation_template);
-    lv_anim_set_delay(&animation_template, 1000);           /*Wait 1 second to start the first scroll*/
-    lv_anim_set_repeat_delay(&animation_template, 5000);    /*Repeat the scroll 3 seconds after the label scrolls back to the initial position*/
-    /*Initialize the label style with the animation template*/
-    lv_style_init(&label_style);
-    lv_style_set_anim(&label_style, &animation_template);
 
     lblScrolTxt_2 = lv_label_create(HorScrollArea);
-    lv_label_set_text(lblScrolTxt_2, "lblScrolTxt_2  init 7654765587569876986986986986896986986986986986986986896896896868565E6476TUGFGHFHGGVJHVJHFVJHBJKGKJHLKBJKVKVKFF.YFKUFFGKUY");
-    lv_obj_set_style_text_font(lblScrolTxt_2, &lv_font_montserrat_48, 0);
+    lv_label_set_text(lblScrolTxt_2, "lblScrolTxt_2  init");
+    lv_obj_set_style_text_font(lblScrolTxt_2, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(lblScrolTxt_2, lv_color_make(255, 255, 255), 0); 
-    lv_obj_align(lblScrolTxt_2, LV_ALIGN_TOP_LEFT, 0, 30); 
-    lv_obj_set_width(lblScrolTxt_2, 480);
-    lv_label_set_long_mode(lblScrolTxt_2, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    //lv_obj_set_scroll_dir(lblScrolTxt_2, LV_DIR_LEFT);
+    lv_obj_align(lblScrolTxt_2, LV_ALIGN_TOP_LEFT, 0, 50); 
 
-    lv_obj_add_style(lblScrolTxt_2, &label_style, LV_STATE_DEFAULT); 
-
-
-/*
     lblScrolTxt_3 = lv_label_create(HorScrollArea);
     lv_label_set_text(lblScrolTxt_3, "lblScrolTxt_2  init");
     lv_obj_set_style_text_font(lblScrolTxt_3, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(lblScrolTxt_3, lv_color_make(0, 255, 255), 0); 
-    lv_obj_align(lblScrolTxt_3, LV_ALIGN_TOP_LEFT, 0, 90);
-*/
+    lv_obj_align(lblScrolTxt_3, LV_ALIGN_TOP_LEFT, 0, 90); 
 }
 
 
@@ -173,14 +149,11 @@ void lv_createButton_CHAUD(lv_obj_t *parent){
     btnR1Chaudiere = lv_btn_create(parent);    // Créer un bouton
     lv_obj_set_size(btnR1Chaudiere, 120, 120);                 // Définir la taille du bouton
     lv_obj_align(btnR1Chaudiere, LV_ALIGN_TOP_LEFT, 0, 360);      // Centrer le bouton
-    lv_obj_set_style_bg_color(btnR1Chaudiere, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR1Chaudiere, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR1Chaudiere, LV_GRAD_DIR_VER, 0);
-//    lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 90, 90, 90 ), 0 );
+    lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 90, 90, 90 ), 0 );
 
     // Ajouter une étiquette au bouton
     lblBtnR1Chaudiere = lv_label_create(btnR1Chaudiere);
-    lv_label_set_text(lblBtnR1Chaudiere, "Chaud");
+    lv_label_set_text(lblBtnR1Chaudiere, "CHAUD");
     lv_obj_center(lblBtnR1Chaudiere);
 
     // Ajouter une petite étiquette au bouton
@@ -197,13 +170,10 @@ void lv_createButton_BOOSTCh(lv_obj_t *parent){
     btnR2BoostCh = lv_btn_create(parent);
     lv_obj_set_size(btnR2BoostCh, 120, 120);                 // Définir la taille du bouton
     lv_obj_align(btnR2BoostCh, LV_ALIGN_TOP_LEFT, 120, 360);
-    lv_obj_set_style_bg_color(btnR2BoostCh, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR2BoostCh, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR2BoostCh, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 100, 100, 100 ), 0 );
+    lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 100, 100, 100 ), 0 );
 
     lblBtnR2BoostCh = lv_label_create(btnR2BoostCh);
-    lv_label_set_text(lblBtnR2BoostCh, "Boost");
+    lv_label_set_text(lblBtnR2BoostCh, "BOOST");
     lv_obj_center(lblBtnR2BoostCh);
 
    // Ajouter une petite étiquette au bouton
@@ -219,13 +189,10 @@ void lv_createButton_RADIAT(lv_obj_t *parent){
     btnR3PpeRadiateur = lv_btn_create(parent);
     lv_obj_set_size(btnR3PpeRadiateur, 120, 120);                 // Définir la taille du bouton
     lv_obj_align(btnR3PpeRadiateur, LV_ALIGN_TOP_LEFT, 240, 360);
-    lv_obj_set_style_bg_color(btnR3PpeRadiateur, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR3PpeRadiateur, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR3PpeRadiateur, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 110, 110, 110 ), 0 );
+    lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 110, 110, 110 ), 0 );
 
     lblBtnR3PpeRadiateur = lv_label_create(btnR3PpeRadiateur);
-    lv_label_set_text(lblBtnR3PpeRadiateur, "Radiat");
+    lv_label_set_text(lblBtnR3PpeRadiateur, "RADIAT");
     lv_obj_center(lblBtnR3PpeRadiateur);
 
    // Ajouter une petite étiquette au bouton
@@ -241,13 +208,10 @@ void lv_createButton_PLANCHER(lv_obj_t *parent){
     btnPpePlancher = lv_btn_create(parent);
     lv_obj_set_size(btnPpePlancher, 120, 120);                 // Définir la taille du bouton
     lv_obj_align(btnPpePlancher, LV_ALIGN_TOP_LEFT, 360, 360);
-    lv_obj_set_style_bg_color(btnPpePlancher, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnPpePlancher, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnPpePlancher, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
+    lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
 
     lblBtnPpePlancher = lv_label_create(btnPpePlancher);
-    lv_label_set_text(lblBtnPpePlancher, "Plancher");
+    lv_label_set_text(lblBtnPpePlancher, "PLANCHER");
     lv_obj_center(lblBtnPpePlancher);
 
     lv_obj_add_event_cb(btnPpePlancher, my_event_cb_PpePlancher, LV_EVENT_RELEASED, NULL);
