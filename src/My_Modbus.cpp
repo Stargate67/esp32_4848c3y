@@ -29,9 +29,13 @@ uint16_t MBresultANIM1[NB_REGS_ANIM];
 //uint16_t MBTransactionCL1; // Transcation for Coils Range 1
 String sTrend;
 
-lv_obj_t *lblScrolTxt_1;
-lv_obj_t *lblScrolTxt_2;
-lv_obj_t *lblScrolTxt_3;
+lv_obj_t * ui_LblTempExt;
+lv_obj_t * ui_LblDate;
+lv_obj_t * ui_LblTempSalon;
+lv_obj_t * ui_LblTempMin;
+lv_obj_t * ui_LblHeureMin;
+lv_obj_t * ui_LblTempMax;
+lv_obj_t * ui_LblHeureMax;
 
 bool bChaudiere;    // Modbus Etat Marche Chaudière
 bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
@@ -112,10 +116,11 @@ void ReadModbus() {
         //mb.disconnect(MBremote);
         
         float rTempSal = round(MBresultANA1[0] * 100.0 / 10.0)/100.0;
-        String sTempSal = "T. Sal: " + String(rTempSal) + " °C";
+        String sTempSal = "Sal:  " + String(rTempSal) + " °C";
         float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        String sTempExt = "T. Ext:   " + String(rTempExt) + " °C";
+        //String sTempExt = "T. Ext:   " + String(rTempExt) + " °C";
+        String sTempExt = String(rTempExt) + " °C";
         // Calcul la moyenne 
         float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
 
@@ -125,12 +130,14 @@ void ReadModbus() {
         } else if (rTempExt < rAvgTempExt){
           sTrend = String(" \\");
         }
-        //lv_label_set_text(lblScrolTxt_1, ("   " + sPrintdate + "            Ext. Min          Ext. Max").c_str());
-        //lv_label_set_text(lblScrolTxt_2, (" " + sTempExt + sTrend + "       " + String(fnMin(rTempExt)) + " °C" + "       " + String(fnMax(rTempExt)) + " °C").c_str());
-        
-        //lv_label_set_text(lblScrolTxt_2, (sTempExt + sTrend + " Min: " + String(fnMin(rTempExt)) + " °C" + " Max: " + String(fnMax(rTempExt)) + " °C").c_str());
 
-        //lv_label_set_text(lblScrolTxt_3, (" " + sTempSal + "       " + sExtMinTimeStp + "       " + sExtMaxTimeStp).c_str());
+        lv_label_set_text(ui_LblDate, sPrintdate.c_str());
+        lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
+        lv_label_set_text(ui_LblTempMin, (String(fnMin(rTempExt)) + " °C").c_str());
+        lv_label_set_text(ui_LblTempMax, (String(fnMax(rTempExt)) + " °C").c_str());
+        lv_label_set_text(ui_LblTempSalon, (sTempSal).c_str());
+        lv_label_set_text(ui_LblHeureMin, (sExtMinTimeStp).c_str());
+        lv_label_set_text(ui_LblHeureMax, (sExtMaxTimeStp).c_str());
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_CHAUD) {

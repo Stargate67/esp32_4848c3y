@@ -3,9 +3,8 @@
 #include <ModbusIP_ESP8266.h>
 #include "esp32_smartdisplay.h"
 
-#define SERDEBUG false
-
-#define BP_DEBUG true
+#define SERDEBUG true
+#define BP_DEBUG false
 
 class Tempos{
         unsigned long uInitTime;
@@ -17,6 +16,24 @@ class Tempos{
         bool Preset(unsigned long Preset);
         bool Reset();
 };
+
+
+// SCREEN: scr
+void ui_Screen1_screen_init(void);
+//extern lv_obj_t * ui_Screen1;
+extern lv_obj_t * ui_Container1;
+extern lv_obj_t * ui_LblTempExt;
+extern lv_obj_t * ui_LblDate;
+extern lv_obj_t * ui_LblTempSalon;
+extern lv_obj_t * ui_Container2;
+extern lv_obj_t * ui_LblTempMin;
+extern lv_obj_t * ui_LblMinExt;
+extern lv_obj_t * ui_LblHeureMin;
+extern lv_obj_t * ui_Container3;
+extern lv_obj_t * ui_LblTempMax;
+extern lv_obj_t * ui_LblMaxExt;
+extern lv_obj_t * ui_LblHeureMax;
+// CUSTOM VARIABLES
 
 void Relays();
 
