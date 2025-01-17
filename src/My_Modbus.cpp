@@ -36,6 +36,7 @@ lv_obj_t * ui_LblTempMin;
 lv_obj_t * ui_LblHeureMin;
 lv_obj_t * ui_LblTempMax;
 lv_obj_t * ui_LblHeureMax;
+lv_coord_t ui_Chart1_series_1_array[1440];
 
 bool bChaudiere;    // Modbus Etat Marche Chaudière
 bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
@@ -138,6 +139,8 @@ void ReadModbus() {
         lv_label_set_text(ui_LblTempSalon, (sTempSal).c_str());
         lv_label_set_text(ui_LblHeureMin, (sExtMinTimeStp).c_str());
         lv_label_set_text(ui_LblHeureMax, (sExtMaxTimeStp).c_str());
+
+        //ui_Chart1_series_1_array[] = rTempExt;
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_CHAUD) {

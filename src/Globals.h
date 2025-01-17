@@ -33,7 +33,9 @@ extern lv_obj_t * ui_Container3;
 extern lv_obj_t * ui_LblTempMax;
 extern lv_obj_t * ui_LblMaxExt;
 extern lv_obj_t * ui_LblHeureMax;
+extern lv_obj_t * ui_Chart1;
 // CUSTOM VARIABLES
+extern lv_coord_t ui_Chart1_series_1_array[];
 
 void Relays();
 

@@ -26,6 +26,7 @@ lv_obj_t * ui_Container2;
 lv_obj_t * ui_LblMinExt;
 lv_obj_t * ui_Container3;
 lv_obj_t * ui_LblMaxExt;
+lv_obj_t * ui_Chart1;
 
 bool bCdeRelaisR1;  // demande de marche Relais 1
 bool bCdeRelaisR2;  // demande de marche Relais 2
@@ -111,56 +112,6 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
         }
         if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
     }
-}
-
-void lv_CreateHorScrollArea(lv_obj_t *parent){
-    lv_obj_t * HorScrollArea = lv_obj_create(parent);
-    lv_obj_set_size(HorScrollArea, 480, 130);
-    lv_obj_set_pos(HorScrollArea, 0, 30);
-    lv_obj_set_style_bg_color(HorScrollArea, lv_color_make( 30, 30, 30 ), 0 );
-    lv_obj_set_style_border_width(HorScrollArea, 0, 0 );
-    lv_obj_set_style_pad_all(HorScrollArea, 0, 0);
-    //lv_obj_set_style_outline_color(HorScrollArea, lv_color_make( 125, 125, 235 ), 0 ); 
-    //lv_obj_set_style_radius(HorScrollArea, 0, 0 );
-    //lv_obj_set_style_outline_width(HorScrollArea, 0, 0 );
- 
-    // Ajouter une étiquette au bouton
-    /*
-    lblScrolTxt_1 = lv_label_create(HorScrollArea);
-    lv_label_set_text(lblScrolTxt_1, "lblScrolTxt_1  init");
-    lv_obj_set_style_text_font(lblScrolTxt_1, &lv_font_montserrat_24, 0);
-    lv_obj_set_style_text_color(lblScrolTxt_1, lv_color_make(2, 40, 209), 0); 
-    lv_obj_align(lblScrolTxt_1, LV_ALIGN_TOP_LEFT, 0, 10); 
-*/
-   // static lv_anim_t animation_template;
-   // static lv_style_t label_style;
-//
-  //  lv_anim_init(&animation_template);
-  //  lv_anim_set_delay(&animation_template, 1000);           /*Wait 1 second to start the first scroll*/
-   // lv_anim_set_repeat_delay(&animation_template, 5000);    /*Repeat the scroll 3 seconds after the label scrolls back to the initial position*/
-    /*Initialize the label style with the animation template*/
-  //  lv_style_init(&label_style);
-   // lv_style_set_anim(&label_style, &animation_template);
-
-    lblScrolTxt_2 = lv_label_create(HorScrollArea);
-    lv_label_set_text(lblScrolTxt_2, "lblScrolTxt_2  init 7654765587569876986986986986896986986986986986986986896896896868565E6476TUGFGHFHGGVJHVJHFVJHBJKGKJHLKBJKVKVKFF.YFKUFFGKUY");
-    lv_obj_set_style_text_font(lblScrolTxt_2, &lv_font_montserrat_48, 0);
-    lv_obj_set_style_text_color(lblScrolTxt_2, lv_color_make(255, 255, 255), 0); 
-    lv_obj_align(lblScrolTxt_2, LV_ALIGN_TOP_LEFT, 0, 30); 
-    lv_obj_set_width(lblScrolTxt_2, 480);
-    lv_label_set_long_mode(lblScrolTxt_2, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    //lv_obj_set_scroll_dir(lblScrolTxt_2, LV_DIR_LEFT);
-
-    //lv_obj_add_style(lblScrolTxt_2, &label_style, LV_STATE_DEFAULT); 
-
-
-/*
-    lblScrolTxt_3 = lv_label_create(HorScrollArea);
-    lv_label_set_text(lblScrolTxt_3, "lblScrolTxt_2  init");
-    lv_obj_set_style_text_font(lblScrolTxt_3, &lv_font_montserrat_24, 0);
-    lv_obj_set_style_text_color(lblScrolTxt_3, lv_color_make(0, 255, 255), 0); 
-    lv_obj_align(lblScrolTxt_3, LV_ALIGN_TOP_LEFT, 0, 90);
-*/
 }
 
 void ui_Screen1_screen_init(lv_obj_t *parent)
@@ -334,20 +285,39 @@ void ui_Screen1_screen_init(lv_obj_t *parent)
     lv_obj_set_style_text_color(ui_LblHeureMax, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LblHeureMax, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblHeureMax, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+/*
+    ui_Chart1 = lv_chart_create(parent);
+    lv_obj_set_width(ui_Chart1, 440);
+    lv_obj_set_height(ui_Chart1, 175);
+    lv_obj_set_x(ui_Chart1, 36);
+    lv_obj_set_y(ui_Chart1, 159);
+    lv_chart_set_type(ui_Chart1, LV_CHART_TYPE_LINE);
+    lv_chart_set_point_count(ui_Chart1, 1440);
+    lv_chart_set_range(ui_Chart1, LV_CHART_AXIS_PRIMARY_Y, -10, 40);
+    lv_chart_set_range(ui_Chart1, LV_CHART_AXIS_SECONDARY_Y, 0, 0);
+    lv_chart_set_div_line_count(ui_Chart1, 0, 10);
+    lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_PRIMARY_X, 10, 5, 2, 100, true, 10);
+    //lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 5, 4, true, 50);
+    //lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_SECONDARY_Y, 1, 5, 5, 2, false, 25);
+    lv_chart_series_t * ui_Chart1_series_1 = lv_chart_add_series(ui_Chart1, lv_color_hex(0xA7A4A4),
+                                                                 LV_CHART_AXIS_PRIMARY_Y);
+    lv_coord_t ui_Chart1_series_1_array[] = {0, 1};
+    lv_chart_set_ext_y_array(ui_Chart1, ui_Chart1_series_1, ui_Chart1_series_1_array);
+*/
+
 }
 
 void lv_createButton_CHAUD(lv_obj_t *parent){
-    // Créer l'interface utilisateur
     btnR1Chaudiere = lv_btn_create(parent);    // Créer un bouton
     lv_obj_set_size(btnR1Chaudiere, 120, 120);                 // Définir la taille du bouton
     lv_obj_align(btnR1Chaudiere, LV_ALIGN_TOP_LEFT, 0, 360);      // Centrer le bouton
     lv_obj_set_style_bg_color(btnR1Chaudiere, Btn_grad_colors[0], 0);
     lv_obj_set_style_bg_grad_color(btnR1Chaudiere, Btn_grad_colors[1], 0);
     lv_obj_set_style_bg_grad_dir(btnR1Chaudiere, LV_GRAD_DIR_VER, 0);
-//    lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 90, 90, 90 ), 0 );
 
     // Ajouter une étiquette au bouton
     lblBtnR1Chaudiere = lv_label_create(btnR1Chaudiere);
+    lv_obj_align(lblBtnR1Chaudiere, LV_ALIGN_TOP_MID, 3, 10); 
     lv_label_set_text(lblBtnR1Chaudiere, "Chaud");
     lv_obj_center(lblBtnR1Chaudiere);
 
@@ -368,7 +338,6 @@ void lv_createButton_BOOSTCh(lv_obj_t *parent){
     lv_obj_set_style_bg_color(btnR2BoostCh, Btn_grad_colors[0], 0);
     lv_obj_set_style_bg_grad_color(btnR2BoostCh, Btn_grad_colors[1], 0);
     lv_obj_set_style_bg_grad_dir(btnR2BoostCh, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 100, 100, 100 ), 0 );
 
     lblBtnR2BoostCh = lv_label_create(btnR2BoostCh);
     lv_label_set_text(lblBtnR2BoostCh, "Boost");
@@ -421,7 +390,6 @@ void lv_createButton_PLANCHER(lv_obj_t *parent){
     lv_obj_add_event_cb(btnPpePlancher, my_event_cb_PpePlancher, LV_EVENT_RELEASED, NULL);
 }
 
-
 void lv_CreateIPLabel(lv_obj_t * parent)
 {
     IPLabel = lv_label_create(parent); 
@@ -467,17 +435,17 @@ void InitUI(){
   // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
 
   // Get the active screen
-  lv_obj_t * scr = lv_scr_act();
+  lv_obj_t * ui_scr = lv_scr_act();
 
   // Set screen background color to dark blue
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x090909), 0);
+  lv_obj_set_style_bg_color(ui_scr, lv_color_hex(0x090909), 0);
 
-  lv_CreateIPLabel(scr);
-  lv_CreateClock(scr);
-  lv_CreateAlarm(scr);
-  ui_Screen1_screen_init(scr);
-  lv_createButton_CHAUD(scr);
-  lv_createButton_BOOSTCh(scr);
-  lv_createButton_RADIAT(scr);
-  lv_createButton_PLANCHER(scr);
+  lv_CreateIPLabel(ui_scr);
+  lv_CreateClock(ui_scr);
+  lv_CreateAlarm(ui_scr);
+  ui_Screen1_screen_init(ui_scr);
+  lv_createButton_CHAUD(ui_scr);
+  lv_createButton_BOOSTCh(ui_scr);
+  lv_createButton_RADIAT(ui_scr);
+  lv_createButton_PLANCHER(ui_scr);
 }
