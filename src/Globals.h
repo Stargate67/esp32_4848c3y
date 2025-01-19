@@ -17,6 +17,21 @@ class Tempos{
         bool Reset();
 };
 
+/*
+constexpr char* sMsgAlarme[16]= {
+    "TEST 1 Alarm"
+    ,"ALARME CHAUDIERE"
+    ,"DEFAUT PRESSION CIRCUIT EAU"
+    ,"DEFAUT PRESSION BASSE CIRCUIT EAU"
+    ,"PORTE DE GARAGE 1 OUVERTE"
+    ,"PROBLEME REGULATION PLANCHER"
+    ,"ALARME ModbusTcp"
+    ,"ALARME ModbusRtu"
+    ,"Temp Exterieure > Temp Salon"
+    ,"Temp Exterieure < Temp Salon"
+};
+*/
+
 
 // SCREEN: scr
 void ui_Screen1_screen_init(void);
@@ -38,6 +53,7 @@ extern lv_obj_t * ui_Chart1;
 extern lv_coord_t ui_Chart1_series_1_array[];
 
 void Relays();
+void DisplayAlarms(uint16_t MBAlarm);
 
 extern ModbusIP mb;  //ModbusIP object
 
@@ -104,6 +120,8 @@ constexpr uint16_t MB_READ_INTERVAL = 1000;
 constexpr uint16_t START_REG = 12688;            // Starting holding register
 constexpr uint16_t NB_REGS = 11;                // Number of holding registers to read
 
+constexpr uint16_t START_REG_ANIM = 12745;      // Retour etat pour animation pompes, ch. lampes, etc 
+constexpr uint16_t NB_REGS_ANIM = 6;            // Number of holding registers to read  y compris les Alarmes 12748,12749
 
 constexpr uint16_t MASK_CHAUD = 0x1;            // Bit 0
 constexpr uint16_t MASK_BOOST_ANIM = 0x4000;    // Bit 14  Pourretour etat BOOST
@@ -127,9 +145,6 @@ constexpr uint16_t BP_ARRET_RADIAT = 19585;     // %MX457.1 Bobine cde Arret
 
 constexpr uint16_t BP_MARCHE_PLANCHER = 19570;  // %MX455.2 Bobine cde Marche
 constexpr uint16_t BP_ARRET_PLANCHER = 19586;   // %MX457.2 Bobine cde Arret
-
-constexpr uint16_t START_REG_ANIM = 12745;      // Retour etat pour animation pompes, ch. lampes, etc 
-constexpr uint16_t NB_REGS_ANIM = 6;            // Number of holding registers to read  y compris les Alarmes
 
 constexpr uint16_t BP_LAMPE_SSOL = 19488;       // BP Marche lampe sous sol
 constexpr uint16_t BP_LAMPE_RDC = 19489;        // BP Marche lampe RdC

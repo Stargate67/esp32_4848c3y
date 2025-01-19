@@ -135,18 +135,16 @@ void setup()
   digitalWrite(RELAY_2, LOW);
   digitalWrite(RELAY_3, LOW);
 
-  mb.client();
-  
   InitUI();
 
   startWifi();
+  
+  mb.client();
   
   setupOTA("ESP32_4848SD_FY", ssid, password);
 
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
-
-
 
 void loop() {
   ArduinoOTA.handle();
@@ -155,8 +153,8 @@ void loop() {
   // ========  Main Tasks at 10ms  =========== 
   if (TimerScan10ms.Q()){ // 10ms
     ReadModbus();
-    TimerScan10ms.Reset();
     mb.task(); // Tache principale Traitement ModbusTCP
+    TimerScan10ms.Reset();
   }
 
   // ========  Main Tasks at 100ms  =========== 

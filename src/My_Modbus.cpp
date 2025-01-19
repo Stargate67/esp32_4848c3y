@@ -70,7 +70,7 @@ void ReadModbus() {
         //mb.task();
         //delay(5);
         prevmillis1 = millis();
-        iState = 20;
+        iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
 
 /*
@@ -101,13 +101,13 @@ void ReadModbus() {
       break;
 
       case 10:
-      { //  ***********    Etape SPARE    **************
+      { //  ***********    Etape 10    **************
         // Wait for the transaction to complete
-        if (millis() >= prevmillis1 + 50){ //Process MB client request each second
-          prevmillis1 = millis();
+        //if (millis() >= prevmillis1 + 50){ //Process MB client request each second
+          //prevmillis1 = millis();
           iState = 20;
           if (SERDEBUG) Serial.println("iState="+String(iState));
-        }
+        //}
       }
       break;
 
@@ -118,6 +118,7 @@ void ReadModbus() {
         
         float rTempSal = round(MBresultANA1[0] * 100.0 / 10.0)/100.0;
         String sTempSal = "Sal:  " + String(rTempSal) + " °C";
+
         float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
         //String sTempExt = "T. Ext:   " + String(rTempExt) + " °C";
@@ -182,7 +183,10 @@ void ReadModbus() {
           bRelay_4 = 0;
           lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
         }
-          
+        
+        // Traitement Affichage des alarmes.
+        DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+
         // ******  DEBUG  ***********
         if (SERDEBUG) { 
           Serial.print("Avg T.Ext. = ");
