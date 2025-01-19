@@ -39,6 +39,8 @@ Tempos Timer4(2000);
 Tempos Timer5(2000);
 Tempos Timer6(2000);
 
+Tempos TpoMesAcquite(2000);  // tempo pour Raz Message acquité
+
 uint16_t MemoHMBAlarme;
 
 void Relays(){
@@ -89,64 +91,87 @@ void Relays(){
 
 void DisplayAlarms(const uint16_t MBAlarm){
 
-    String sMessage;
+    static String sMessage;
+    static uint16_t memoXorAlarm;
 
     if ( MBAlarm ) {
-        if ( MBAlarm != MemoHMBAlarme) {
-            MemoHMBAlarme = MBAlarm;
+        if ( MBAlarm != MemoHMBAlarme) { // Une alarme se rajoute
+            String sPrefix = "|> " + sClockHHMM + " ";
 
-            sMessage = "";
-            if (MBAlarm & 0b1) { // Bit0
-                sMessage = (sMessage + "...TEST 1 Alarm");
+            memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
+
+            if (memoXorAlarm & 0b1) { // Bit0
+                sMessage = (sMessage + sPrefix + "TEST 1 Alarm  ");
             }
-            if (MBAlarm & 0b10) { // Bit1
-                sMessage = (sMessage + "...ALARME CHAUDIERE");
+            if (memoXorAlarm & 0b10) { // Bit1
+                sMessage = (sMessage + sPrefix + "ALARME CHAUDIERE  ");
             }
-            if (MBAlarm & 0b100) { // Bit2
-                sMessage = (sMessage + "...DEFAUT PRESSION CIRCUIT EAU");
+            if (memoXorAlarm & 0b100) { // Bit2
+                sMessage = (sMessage + sPrefix + "DEFAUT PRESSION CIRCUIT EAU  ");
             }
-            if (MBAlarm & 0b1000) { // Bit3
-                sMessage = (sMessage + "...DEFAUT PRESSION BASSE CIRCUIT EAU");
+            if (memoXorAlarm & 0b1000) { // Bit3
+                sMessage = (sMessage + sPrefix + "DEFAUT PRESSION BASSE CIRCUIT EAU  ");
             }
-            if (MBAlarm & 0b10000) { // Bit4
-                sMessage = (sMessage + "...PORTE DE GARAGE 1 OUVERTE");
+            if (memoXorAlarm & 0b10000) { // Bit4
+                sMessage = (sMessage + sPrefix + "PORTE DE GARAGE 1 OUVERTE  ");
             }
-            if (MBAlarm & 0b100000) { // Bit5
-                sMessage = (sMessage + "...PROBLEME REGULATION PLANCHER");
+            if (memoXorAlarm & 0b100000) { // Bit5
+                sMessage = (sMessage + sPrefix + "DEFAUT REGULATION PLANCHER  ");
             }
-            if (MBAlarm & 0b1000000) { // Bit6
-                sMessage = (sMessage + "...ALARME ModbusTcp");
+            if (memoXorAlarm & 0b1000000) { // Bit6
+                sMessage = (sMessage + sPrefix + "ALARME ModbusTcp  ");
             }
-            if (MBAlarm & 0b10000000) { // Bit7
-                sMessage = (sMessage + "...ALARME ModbusRtu");
+            if (memoXorAlarm & 0b10000000) { // Bit7
+                sMessage = (sMessage + sPrefix + "ALARME ModbusRtu  ");
             }
-            if (MBAlarm & 0b100000000) { // Bit8
-                sMessage = (sMessage + "...Temp Exterieure > Temp Salon. Fermer les volets!");
+            if (memoXorAlarm & 0b100000000) { // Bit8
+                sMessage = (sMessage + sPrefix + "Temp Exterieure > Temp Salon. Fermer les volets!  ");
             }
-            if (MBAlarm & 0b1000000000) { // Bit9
-                sMessage = (sMessage + "...Temp Exterieure < Temp Salon. Ouvrir les fenêtres!");
+            if (memoXorAlarm & 0b1000000000) { // Bit9
+                sMessage = (sMessage + sPrefix + "Temp Exterieure < Temp Salon. Ouvrir les fenêtres!  ");
             }
-            if (MBAlarm & 0b10000000000) { // Bit10
-                sMessage = (sMessage + "...Alarme Bit 10");
+            if (memoXorAlarm & 0b10000000000) { // Bit10
+                sMessage = (sMessage + sPrefix + "Alarme Bit 10  ");
             }
-            if (MBAlarm & 0b100000000000) { // Bit11
-                sMessage = (sMessage + "...Alarme Bit 11");
+            if (memoXorAlarm & 0b100000000000) { // Bit11
+                sMessage = (sMessage + sPrefix + "Alarme Bit 11  ");
             }
-            if (MBAlarm & 0b1000000000000) { // Bit12
-                sMessage = (sMessage + "...Alarme Bit 12");
+            if (memoXorAlarm & 0b1000000000000) { // Bit12
+                sMessage = (sMessage + sPrefix + "Alarme Bit 12  ");
             }
-            if (MBAlarm & 0b10000000000000) { // Bit13
-                sMessage = (sMessage + "...Alarme Bit 13");
+            if (memoXorAlarm & 0b10000000000000) { // Bit13
+                sMessage = (sMessage + sPrefix + "Alarme Bit 13  ");
             }
-            if (MBAlarm & 0b100000000000000) { // Bit14
-                sMessage = (sMessage + "...Alarme Bit 14");
+            if (memoXorAlarm & 0b100000000000000) { // Bit14
+                sMessage = (sMessage + sPrefix + "Alarme Bit 14  ");
             }
-            if (MBAlarm & 0b1000000000000000) { // Bit15
-                sMessage = (sMessage + "...Alarme Bit 15");
+            if (memoXorAlarm & 0b1000000000000000) { // Bit15
+                sMessage = (sMessage + sPrefix + "Alarme Bit 15  ");
             }
             lv_label_set_text(AlarmLabel, sMessage.c_str());
+            MemoHMBAlarme = MBAlarm;
         }
-    } else {
-        lv_label_set_text(AlarmLabel, "...Pas d'alarme...");
+        if (bAcquitAlarme){
+            memoXorAlarm = 0;
+            MemoHMBAlarme = 0;
+            sMessage = "";
+        }
     }
 }
+
+void AcquitMesAlarme(){
+    static bool bBitmemo;
+    if (bAcquitAlarme){
+        if (!bBitmemo) { 
+            TpoMesAcquite.Reset();
+            bBitmemo = 1;
+            lv_label_set_text(AlarmLabel, "         Alarmes Acquitees");
+        }
+        
+        if (TpoMesAcquite.Q()) {
+            lv_label_set_text(AlarmLabel, "");
+            bAcquitAlarme = 0;
+            bBitmemo = 0;
+        }
+    }
+ }

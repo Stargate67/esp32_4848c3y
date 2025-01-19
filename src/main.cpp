@@ -93,8 +93,10 @@ void startWifi(){
   //long rssi = WiFi.RSSI();
   Serial.println("");
   Serial.println(WiFi.localIP());
-  String sLocalIP = WiFi.localIP().toString();
-  lv_label_set_text(IPLabel, sLocalIP.c_str());
+  //String sLocalIP = WiFi.localIP().toString();
+  IPAddress LocalIP = WiFi.localIP();
+  lv_label_set_text_fmt(IPLabel, ".%d.%d", LocalIP[2], LocalIP[3]);
+  //(sLocalIP.substring( strlen(sLocalIP), -6)).c_str());
 }
 
 void setTime(int yr, int month, int mday, int hr, int minute, int sec, int isDst){
@@ -141,7 +143,7 @@ void setup()
   
   mb.client();
   
-  setupOTA("ESP32_4848SD_FY", ssid, password);
+  setupOTA("ESP32_4848SD_HOMIS_FY", ssid, password);
 
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
@@ -150,17 +152,18 @@ void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
 
-  // ========  Main Tasks at 10ms  =========== 
+  // ========  Main Tasks à 10ms  =========== 
   if (TimerScan10ms.Q()){ // 10ms
     ReadModbus();
     mb.task(); // Tache principale Traitement ModbusTCP
     TimerScan10ms.Reset();
   }
 
-  // ========  Main Tasks at 100ms  =========== 
+  // ========  Main Tasks à 100ms  =========== 
   if (TimerScan100ms.Q()){ // 10ms
     Relays();
-    
+    AcquitMesAlarme();
+
     if (!getLocalTime(&timeinfo)) {
       lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
       return;
@@ -192,8 +195,6 @@ void loop() {
       if (SERDEBUG) Serial.println("Date: " + sPrintdate);
       TmpDay = timeinfo.tm_mday;
     }
-
-
 
   TimerScan100ms.Reset();
   }

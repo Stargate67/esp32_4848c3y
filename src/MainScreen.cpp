@@ -2,6 +2,7 @@
 #include "Globals.h"
 
 bool bRelay_4;
+bool bAcquitAlarme;
 
 uint32_t compteur;
 
@@ -111,6 +112,19 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
             bRelay_4 = 1;
         }
         if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
+    }
+}
+
+static void my_event_cb_AcqAlarmes (lv_event_t *e){
+
+    lv_event_code_t code = lv_event_get_code(e);
+    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
+
+    if (code == LV_EVENT_RELEASED) {
+        compteur++;
+        bAcquitAlarme = 1;
+
+        if (BP_DEBUG) Serial.println("Acquit Alarmes: event code=" + String(LV_EVENT_RELEASED));
     }
 }
 
@@ -393,7 +407,7 @@ void lv_createButton_PLANCHER(lv_obj_t *parent){
 void lv_CreateIPLabel(lv_obj_t * parent)
 {
     IPLabel = lv_label_create(parent); 
-    lv_label_set_text(IPLabel, "XXX.XXX.XXX.XXX");
+    lv_label_set_text(IPLabel, ".X.XXX");
     lv_obj_set_style_text_font(IPLabel, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(IPLabel, lv_color_make(255, 250, 0), 0); //yellow
     lv_obj_align(IPLabel, LV_ALIGN_TOP_LEFT, 0, 3); 
@@ -402,24 +416,26 @@ void lv_CreateIPLabel(lv_obj_t * parent)
 void lv_CreateAlarm(lv_obj_t * parent)
 {
     AlarmLabel = lv_label_create(parent);
-    lv_obj_set_width(AlarmLabel, 310);
-    lv_label_set_text(AlarmLabel, "...Pas d'alarme...");
-    lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_width(AlarmLabel, 340);
+    lv_label_set_text(AlarmLabel, "");
+    lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(AlarmLabel, lv_color_make(255, 0, 0), 0); //Red
-    lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 80, 0); 
+    lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 40, 0); 
     lv_label_set_long_mode(AlarmLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
     //lv_obj_set_scroll_dir(AlarmLabel, LV_DIR_LEFT);
+
+    lv_obj_add_flag(AlarmLabel, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_add_event_cb(AlarmLabel, my_event_cb_AcqAlarmes, LV_EVENT_RELEASED, NULL);
 }
 
 void lv_CreateClock(lv_obj_t * parent)
 {    // Create a label
     ClockLabel = lv_label_create(parent); 
     lv_label_set_text(ClockLabel, "HH:MM:SS");
-    lv_obj_set_style_text_font(ClockLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_font(ClockLabel, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(ClockLabel, lv_color_white(), 0);
     lv_obj_align(ClockLabel, LV_ALIGN_TOP_RIGHT, 0, 0); 
 }
-
 
 void InitUI(){
 

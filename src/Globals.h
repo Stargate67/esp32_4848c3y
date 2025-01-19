@@ -3,8 +3,8 @@
 #include <ModbusIP_ESP8266.h>
 #include "esp32_smartdisplay.h"
 
-#define SERDEBUG true
-#define BP_DEBUG false
+#define SERDEBUG false
+#define BP_DEBUG true
 
 class Tempos{
         unsigned long uInitTime;
@@ -16,6 +16,8 @@ class Tempos{
         bool Preset(unsigned long Preset);
         bool Reset();
 };
+
+//extern Tempos TpoMesAcquite();  // tempo pour Raz Message acquité
 
 /*
 constexpr char* sMsgAlarme[16]= {
@@ -54,6 +56,9 @@ extern lv_coord_t ui_Chart1_series_1_array[];
 
 void Relays();
 void DisplayAlarms(uint16_t MBAlarm);
+void AcquitMesAlarme();
+
+extern bool bAcquitAlarme;
 
 extern ModbusIP mb;  //ModbusIP object
 
