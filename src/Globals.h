@@ -122,8 +122,8 @@ lv_obj_t *scr;
 
 constexpr uint16_t MB_READ_INTERVAL = 1000; 
 
-constexpr uint16_t START_REG = 12688;            // Starting holding register
-constexpr uint16_t NB_REGS = 11;                // Number of holding registers to read
+constexpr uint16_t START_REG = 12688;           // === Requete de Lectuer Modbus principale ===  Starting holding register
+constexpr uint16_t NB_REGS = 22;                // Number of holding registers to read
 
 constexpr uint16_t START_REG_ANIM = 12745;      // Retour etat pour animation pompes, ch. lampes, etc 
 constexpr uint16_t NB_REGS_ANIM = 6;            // Number of holding registers to read  y compris les Alarmes 12748,12749
