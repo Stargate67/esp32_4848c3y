@@ -94,44 +94,60 @@ void DisplayAlarms(const uint16_t MBAlarm){
     static String sMessage;
     static uint16_t memoXorAlarm;
 
+/*
+Alarmes PLC 
+
+     '/!\ 0 ALARME CHAUDIERE'
+    ,'/!\ 1 PROBLEME REGULATION PLANCHER'
+    ,'/!\ 2 PORTE DE GARAGE OUVERTE'
+    ,'/!\ 3 DEFAUT PRESSION EAU'
+    ,'/!\ 4 TEST MESSAGE'
+    ,'/!\ 5 ALARME ModbusTcp'
+    ,'/!\ 6 ALARME ModbusRtu'
+    ,'/!\ 7 Courant > 4A'
+    ,'/!\ 8 Fuite d eau probable'
+    ,'/!\ 9 Temp. Ext > Temp. Salon'
+    ,'/!\ 10 Temp. Ext < Temp. Salon'
+*/
+
     if ( MBAlarm ) {
         if ( MBAlarm != MemoHMBAlarme) { // Une alarme se rajoute
-            String sPrefix = "|> " + sClockHHMM + " ";
+            String sPrefix = "/!\\ " + sClockHHMM + " ";
 
             memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
 
             if (memoXorAlarm & 0b1) { // Bit0
-                sMessage = (sMessage + sPrefix + "TEST 1 Alarm  ");
+                sMessage = (sMessage + sPrefix + "0 ALARME CHAUDIERE  ");
             }
             if (memoXorAlarm & 0b10) { // Bit1
-                sMessage = (sMessage + sPrefix + "ALARME CHAUDIERE  ");
+                sMessage = (sMessage + sPrefix + "1 PROBLEME REGULATION PLANCHER  ");
             }
             if (memoXorAlarm & 0b100) { // Bit2
-                sMessage = (sMessage + sPrefix + "DEFAUT PRESSION CIRCUIT EAU  ");
+                sMessage = (sMessage + sPrefix + "2 PORTE DE GARAGE 1 OUVERTE  ");
             }
             if (memoXorAlarm & 0b1000) { // Bit3
-                sMessage = (sMessage + sPrefix + "DEFAUT PRESSION BASSE CIRCUIT EAU  ");
+                sMessage = (sMessage + sPrefix + "3 DEFAUT PRESSION EAU CHAUFFAGE  ");
             }
             if (memoXorAlarm & 0b10000) { // Bit4
-                sMessage = (sMessage + sPrefix + "PORTE DE GARAGE 1 OUVERTE  ");
+                sMessage = (sMessage + sPrefix + "4 TEST MESSAGE  ");
             }
             if (memoXorAlarm & 0b100000) { // Bit5
-                sMessage = (sMessage + sPrefix + "DEFAUT REGULATION PLANCHER  ");
+                sMessage = (sMessage + sPrefix + "5 ALARME ModbusTcp  ");
             }
             if (memoXorAlarm & 0b1000000) { // Bit6
-                sMessage = (sMessage + sPrefix + "ALARME ModbusTcp  ");
+                sMessage = (sMessage + sPrefix + "6 ALARME ModbusRtu  ");
             }
             if (memoXorAlarm & 0b10000000) { // Bit7
-                sMessage = (sMessage + sPrefix + "ALARME ModbusRtu  ");
+                sMessage = (sMessage + sPrefix + "7 Courant > 4A  ");
             }
             if (memoXorAlarm & 0b100000000) { // Bit8
-                sMessage = (sMessage + sPrefix + "Temp Exterieure > Temp Salon. Fermer les volets!  ");
+                sMessage = (sMessage + sPrefix + "8 Fuite d eau probable  ");
             }
             if (memoXorAlarm & 0b1000000000) { // Bit9
-                sMessage = (sMessage + sPrefix + "Temp Exterieure < Temp Salon. Ouvrir les fenêtres!  ");
+                sMessage = (sMessage + sPrefix + "9 Temp. Ext > Temp. Fermer les volets!  ");
             }
             if (memoXorAlarm & 0b10000000000) { // Bit10
-                sMessage = (sMessage + sPrefix + "Alarme Bit 10  ");
+                sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenêtres!  ");
             }
             if (memoXorAlarm & 0b100000000000) { // Bit11
                 sMessage = (sMessage + sPrefix + "Alarme Bit 11  ");

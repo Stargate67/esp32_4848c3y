@@ -443,7 +443,7 @@ void InitUI(){
   smartdisplay_init();
 
   // Set backlight to full brightness
-  smartdisplay_lcd_set_backlight(0.6); // 0 is off, 0.5 is half and 1 is full brightness.
+  smartdisplay_lcd_set_backlight(0.8); // 0 is off, 0.5 is half and 1 is full brightness.
 
   __attribute__((unused)) auto disp = lv_disp_get_default();
   // lv_disp_set_rotation(disp, LV_DISP_ROT_90);
