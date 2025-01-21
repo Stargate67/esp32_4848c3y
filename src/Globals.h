@@ -4,7 +4,7 @@
 #include "esp32_smartdisplay.h"
 
 #define SERDEBUG false
-#define BP_DEBUG true
+#define BP_DEBUG false
 
 class Tempos{
         unsigned long uInitTime;
@@ -50,9 +50,22 @@ extern lv_obj_t * ui_Container3;
 extern lv_obj_t * ui_LblTempMax;
 extern lv_obj_t * ui_LblMaxExt;
 extern lv_obj_t * ui_LblHeureMax;
-extern lv_obj_t * ui_Chart1;
+
+
+extern lv_obj_t * ui_LblValPlancher;
+extern lv_obj_t * ui_LblValECS;
+extern lv_obj_t * ui_LblValRadiat;
+extern lv_obj_t * ui_LblValDebitRadit;
+extern lv_obj_t * ui_LblValCourant;
+
+extern lv_obj_t * ui_LblValConsoJEau;
+extern lv_obj_t * ui_LblValConsoJElec;
+extern lv_obj_t * ui_LblValConsoJGaz;
+extern lv_obj_t * ui_LblValConsoJ1Elec;
+extern lv_obj_t * ui_LblValConsoJ1Eau;
+extern lv_obj_t * ui_LblValConsoJ1Gaz;
+
 // CUSTOM VARIABLES
-extern lv_coord_t ui_Chart1_series_1_array[];
 
 void Relays();
 void DisplayAlarms(uint16_t MBAlarm);
@@ -116,16 +129,12 @@ extern lv_obj_t *AlarmLabel;
 extern lv_obj_t *ClockLabel;
 extern lv_obj_t *HorScrollArea;
 
-/*
-lv_obj_t *scr;
-*/
-
 constexpr uint16_t MB_READ_INTERVAL = 1000; 
 
 constexpr uint16_t START_REG = 12688;           // === Requete de Lectuer Modbus principale ===  Starting holding register
 constexpr uint16_t NB_REGS = 22;                // Number of holding registers to read
 
-constexpr uint16_t START_REG_ANIM = 12745;      // Retour etat pour animation pompes, ch. lampes, etc 
+constexpr uint16_t START_REG_ANIM = 12745;      // === Requete de Lectuer Modbus ==== Retour etat pour animation pompes, ch. lampes, etc 
 constexpr uint16_t NB_REGS_ANIM = 6;            // Number of holding registers to read  y compris les Alarmes 12748,12749
 
 constexpr uint16_t MASK_CHAUD = 0x1;            // Bit 0

@@ -24,11 +24,6 @@ uint16_t MBresultANA1[NB_REGS];
 uint16_t MBresultANIM1[NB_REGS_ANIM];
 //bool MBresultCL1[NB_OUTPUT1];
 
-//uint16_t MBTransactionANA1; // Transcation for HRs Range 1
-//uint16_t MBTransactionANIM1; // Transcation for HRs Range 1
-//uint16_t MBTransactionCL1; // Transcation for Coils Range 1
-String sTrend;
-
 lv_obj_t * ui_LblTempExt;
 lv_obj_t * ui_LblDate;
 lv_obj_t * ui_LblTempSalon;
@@ -36,7 +31,19 @@ lv_obj_t * ui_LblTempMin;
 lv_obj_t * ui_LblHeureMin;
 lv_obj_t * ui_LblTempMax;
 lv_obj_t * ui_LblHeureMax;
-lv_coord_t ui_Chart1_series_1_array[1440];
+
+lv_obj_t * ui_LblValPlancher;
+lv_obj_t * ui_LblValECS;
+lv_obj_t * ui_LblValRadiat;
+lv_obj_t * ui_LblValDebitRadit;
+lv_obj_t * ui_LblValCourant;
+
+lv_obj_t * ui_LblValConsoJEau;
+lv_obj_t * ui_LblValConsoJElec;
+lv_obj_t * ui_LblValConsoJGaz;
+lv_obj_t * ui_LblValConsoJ1Elec;
+lv_obj_t * ui_LblValConsoJ1Eau;
+lv_obj_t * ui_LblValConsoJ1Gaz;
 
 bool bChaudiere;    // Modbus Etat Marche Chaudière
 bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
@@ -114,23 +121,57 @@ void ReadModbus() {
       // Lecture des valeurs dans le buffer MB et mise ne forme
       case 20:
       {
-        //mb.disconnect(MBremote);
-        
         float rTempSal = round(MBresultANA1[0] * 100.0 / 10.0)/100.0;
         String sTempSal = "Sal:  " + String(rTempSal) + " °C";
 
+        float rTempPlancher;
+        rTempPlancher = round(MBresultANA1[1]*1.0)/10.0;
+        String sTempPlancher = String(rTempPlancher) + "°C";
+
+        float rTempECS = round(MBresultANA1[2]*1.0)/10.0; // 1 digits 
+        String sTempECS = String(rTempECS) + "°C";
+
+        float rTempRadiat = int(MBresultANA1[5])/10.0; // 1 digits 
+        float rDebitRadiat = int(MBresultANA1[7])/10.0; // 1 digits 
+
+        float rCourant = round(MBresultANA1[15]/100.0)/10.0; // 1 digits
+        if (SERDEBUG) Serial.println("sTempPlancher " + String(rTempPlancher));
+        if (SERDEBUG) Serial.println("TempECS " + String(rTempECS));
+        if (SERDEBUG) Serial.println("Courant " + String(rCourant));
+
+        int rConsoEauJ = int(MBresultANA1[16]); 
+        int rConsoEauJ1 = int(MBresultANA1[17]); 
+        int rConsoElecJ = int(MBresultANA1[18]); 
+        int rConsoElecJ1 = int(MBresultANA1[19]);
+
+        float rConsoGazJ = round(MBresultANA1[20])/100;
+        String sConsoGazJ = String(rConsoGazJ);
+
+        float rConsoGazJ1 = MBresultANA1[21]/100; 
+        String sConsoGazJ1 = String(rConsoGazJ1) + "Nm3";
+
         float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        //String sTempExt = "T. Ext:   " + String(rTempExt) + " °C";
         String sTempExt = String(rTempExt) + " °C";
         // Calcul la moyenne 
         float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
 
-        sTrend = String(" =");
+        // Changement de couleur des valeurs Min ou Max selon tendance de la temp ext.
+        lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
         if (rTempExt > rAvgTempExt) {
-          sTrend = String(" /");
+          lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
         } else if (rTempExt < rAvgTempExt){
-          sTrend = String(" \\");
+          lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+
+        // Changement de couleur de la Temp Ext. selon 
+        lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (rTempExt > 25.0) {
+          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        if (rTempExt > 32.0) {
+          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFB2626), LV_PART_MAIN | LV_STATE_DEFAULT);
         }
 
         lv_label_set_text(ui_LblDate, sPrintdate.c_str());
@@ -141,7 +182,18 @@ void ReadModbus() {
         lv_label_set_text(ui_LblHeureMin, (sExtMinTimeStp).c_str());
         lv_label_set_text(ui_LblHeureMax, (sExtMaxTimeStp).c_str());
 
-        //ui_Chart1_series_1_array[] = rTempExt;
+        lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
+        lv_label_set_text(ui_LblValECS, sTempECS.c_str());
+        lv_label_set_text(ui_LblValRadiat, (String(rTempRadiat) + " °C").c_str());
+        lv_label_set_text(ui_LblValDebitRadit, (String(rDebitRadiat) + " l/m").c_str());
+        lv_label_set_text(ui_LblValCourant, (String(rCourant) + " A").c_str());
+
+        lv_label_set_text(ui_LblValConsoJEau, String(rConsoEauJ).c_str());
+        lv_label_set_text(ui_LblValConsoJElec, String(rConsoElecJ).c_str());
+        lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
+        lv_label_set_text(ui_LblValConsoJ1Eau, (String(rConsoEauJ1) + " l").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Elec, (String(rConsoElecJ1) + " Kwh").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
 
         // Traitement animation des BPs sur retour MBus
         if (MBresultANIM1[0] & MASK_CHAUD) {
@@ -190,8 +242,7 @@ void ReadModbus() {
         // ******  DEBUG  ***********
         if (SERDEBUG) { 
           Serial.print("Avg T.Ext. = ");
-          Serial.print(String(rAvgTempExt));
-          Serial.println(sTrend);
+          Serial.println(String(rAvgTempExt));
         }
         LastModbusRequest = millis();
         iState = 30;

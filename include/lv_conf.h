@@ -305,7 +305,7 @@ Use a custom tick source that tells the elapsed time in milliseconds.
     #define lv_snprintf  snprintf
     #define lv_vsnprintf vsnprintf
 #else   /*LV_SPRINTF_CUSTOM*/
-    #define LV_SPRINTF_USE_FLOAT 0
+    #define LV_SPRINTF_USE_FLOAT 1
 #endif  /*LV_SPRINTF_CUSTOM*/
 
 #define LV_USE_USER_DATA 1
@@ -372,7 +372,7 @@ Use a custom tick source that tells the elapsed time in milliseconds.
 #define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_18 1
 #define LV_FONT_MONTSERRAT_20 1
-#define LV_FONT_MONTSERRAT_22 0
+#define LV_FONT_MONTSERRAT_22 1
 #define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0

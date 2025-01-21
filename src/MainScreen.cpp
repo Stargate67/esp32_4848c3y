@@ -1,5 +1,7 @@
-#include "MainScreen.h"
+
 #include "Globals.h"
+#include "MainScreen.h"
+#include "MainScreen2.h"
 
 bool bRelay_4;
 bool bAcquitAlarme;
@@ -299,25 +301,6 @@ void ui_Screen1_screen_init(lv_obj_t *parent)
     lv_obj_set_style_text_color(ui_LblHeureMax, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LblHeureMax, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblHeureMax, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
-/*
-    ui_Chart1 = lv_chart_create(parent);
-    lv_obj_set_width(ui_Chart1, 440);
-    lv_obj_set_height(ui_Chart1, 175);
-    lv_obj_set_x(ui_Chart1, 36);
-    lv_obj_set_y(ui_Chart1, 159);
-    lv_chart_set_type(ui_Chart1, LV_CHART_TYPE_LINE);
-    lv_chart_set_point_count(ui_Chart1, 1440);
-    lv_chart_set_range(ui_Chart1, LV_CHART_AXIS_PRIMARY_Y, -10, 40);
-    lv_chart_set_range(ui_Chart1, LV_CHART_AXIS_SECONDARY_Y, 0, 0);
-    lv_chart_set_div_line_count(ui_Chart1, 0, 10);
-    lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_PRIMARY_X, 10, 5, 2, 100, true, 10);
-    //lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 5, 4, true, 50);
-    //lv_chart_set_axis_tick(ui_Chart1, LV_CHART_AXIS_SECONDARY_Y, 1, 5, 5, 2, false, 25);
-    lv_chart_series_t * ui_Chart1_series_1 = lv_chart_add_series(ui_Chart1, lv_color_hex(0xA7A4A4),
-                                                                 LV_CHART_AXIS_PRIMARY_Y);
-    lv_coord_t ui_Chart1_series_1_array[] = {0, 1};
-    lv_chart_set_ext_y_array(ui_Chart1, ui_Chart1_series_1, ui_Chart1_series_1_array);
-*/
 
 }
 
@@ -460,6 +443,7 @@ void InitUI(){
   lv_CreateClock(ui_scr);
   lv_CreateAlarm(ui_scr);
   ui_Screen1_screen_init(ui_scr);
+  ui_Screen1_screen_init_1(ui_scr);
   lv_createButton_CHAUD(ui_scr);
   lv_createButton_BOOSTCh(ui_scr);
   lv_createButton_RADIAT(ui_scr);
