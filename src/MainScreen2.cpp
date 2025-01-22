@@ -4,30 +4,18 @@
 
 lv_obj_t * ui_Cont1Val;
 lv_obj_t * ui_LblPlancher;
-//lv_obj_t * ui_LblValPlancher;
 lv_obj_t * ui_LblConsPlancher;
-//lv_obj_t * ui_LblValConsPlancher;
 lv_obj_t * ui_LblECS;
-//lv_obj_t * ui_LblValECS;
 
 lv_obj_t * ui_Cont2Val;
 lv_obj_t * ui_LblRadiat;
-//lv_obj_t * ui_LblValRadiat;
 lv_obj_t * ui_LblDebitRadiat;
-//lv_obj_t * ui_LblValDebitRadit;
 lv_obj_t * ui_LblCourant;
-//lv_obj_t * ui_LblValCourant;
 
 lv_obj_t * ui_ContConso;
 lv_obj_t * ui_LblConsoEau;
 lv_obj_t * ui_LblConsoElec;
 lv_obj_t * ui_LblConsoGaz;
-//lv_obj_t * ui_LblValConsoJEau;
-//lv_obj_t * ui_LblValConsoJElec;
-//lv_obj_t * ui_LblValConsoJGaz;
-//lv_obj_t * ui_LblValConsoJ1Elec;
-//lv_obj_t * ui_LblValConsoJ1Eau;
-//lv_obj_t * ui_LblValConsoJ1Gaz;
 lv_obj_t * ui_LblTitreConso;
 
 void ui_Screen1_screen_init_1(lv_obj_t *parent) {
@@ -255,11 +243,11 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     ui_LblValConsoJ1Eau = lv_label_create(ui_ContConso);
     lv_obj_set_width(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);   /// 480
     lv_obj_set_height(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);    /// 50
-    lv_obj_set_x(ui_LblValConsoJ1Eau, -45);
+    lv_obj_set_x(ui_LblValConsoJ1Eau, -40);
     lv_obj_set_y(ui_LblValConsoJ1Eau, 19);
     lv_obj_set_align(ui_LblValConsoJ1Eau, LV_ALIGN_TOP_RIGHT);
     lv_label_set_long_mode(ui_LblValConsoJ1Eau, LV_LABEL_LONG_SCROLL);
-    lv_label_set_text(ui_LblValConsoJ1Eau, "XXXX l");
+    lv_label_set_text(ui_LblValConsoJ1Eau, "XXXX L");
     lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Eau, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_scroll_dir(ui_LblValConsoJ1Eau, LV_DIR_LEFT);
     lv_obj_set_style_text_color(ui_LblValConsoJ1Eau, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);

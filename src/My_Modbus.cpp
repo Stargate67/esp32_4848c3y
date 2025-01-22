@@ -7,6 +7,8 @@
 #include "My_Modbus.h"
 #include <ModbusIP_ESP8266.h>
 
+#define NBAVGFIFO 29
+
 ModbusIP mb;
 
 unsigned long prevmillis1;
@@ -16,8 +18,8 @@ int iState = 0;
 String sExtMaxTimeStp = "NA:NA";
 String sExtMinTimeStp = "NA:NA";
 //const int iAvgMaxFifo;
-const int iAvgMaxFifo = 10;
-float fAvgFiFo[iAvgMaxFifo];
+//const int iAvgMaxFifo = 10;
+//float fAvgFiFo[iAvgMaxFifo];
 int iReadIndex;
 int iStartIndex;
 uint16_t MBresultANA1[NB_REGS];
@@ -78,31 +80,6 @@ void ReadModbus() {
         prevmillis1 = millis();
         iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
-
-/*
-        if (SERDEBUG) Serial.println("iState="+String(iState));
-        if (SERDEBUG) Serial.println("MBTransact.="+String(MBTransactionANA1));
-        if (SERDEBUG) Serial.println("MBTransact.="+String(MBTransactionANIM1));
-
-        // Wait for the transaction to complete
-        if (mb.isTransaction(MBTransactionANA1) || mb.isTransaction(MBTransactionANIM1)) {
-          mb.task();
-          if (millis() >= TransactMillis1 +2000){ // TimeOut Transaction
-            lv_label_set_text(AlarmLabel, "Erreur transaction Modbus"); // A faire.. rajouter le code erreur Modbus
-            LastModbusRequest = millis();
-            iState = 30;
-            if (SERDEBUG) Serial.println("iState="+String(iState));
-            break;
-          }
-        } else {
-          // Transaction MB OK
-          prevmillis1 = millis();
-          iState = 20;
-          if (SERDEBUG) Serial.println("iState="+String(iState));
-          if (SERDEBUG) Serial.println("MBTransactHR="+String(MBTransactionANA1));
-          //if (SERDEBUG) Serial.println("MBTransactCoils="+String(MBTransactionCL1));
-        }
-        */
       } 
       break;
 
@@ -121,11 +98,11 @@ void ReadModbus() {
       case 20:
       {
 
-        float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
-        float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
-        String sTempExt = String(rTempExt) + " °C";
+        float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
+        //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
+        String sTempExt = String(rTempExt, 2) + " °C";
         // Calcul la moyenne 
-        float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
+        float rAvgTempExt = fnAverage(rTempExt);
 
         String sTempSal = "Sal:  " + String(MBresultANA1[0]/10.0, 2) + " °C";
 
@@ -140,18 +117,18 @@ void ReadModbus() {
         String sCourant = String(MBresultANA1[15]/1000.0, 1)+ " A"; // 3 digits vers 1 digits
 
         // Container CONSO 
-        int rConsoElecJ = int(MBresultANA1[16]); 
-        int rConsoElecJ1 = int(MBresultANA1[17]);
-        int rConsoEauJ = int(MBresultANA1[18]); 
-        int rConsoEauJ1 = int(MBresultANA1[19]); 
-        String sConsoGazJ = String(round(MBresultANA1[20]*10.0)/1000.0);
-        String sConsoGazJ1 = String(round(MBresultANA1[21]*10.0)/1000.0) + " Nm3";
+        int iConsoElecJ = int(MBresultANA1[16]); 
+        int iConsoElecJ1 = int(MBresultANA1[17]);
+        int iConsoEauJ = int(MBresultANA1[18]); 
+        int iConsoEauJ1 = int(MBresultANA1[19]); 
+        String sConsoGazJ = String(MBresultANA1[20]/100.0, 2);
+        String sConsoGazJ1 = String(MBresultANA1[21]/100.0, 2) + " Nm3";
 
         //if (SERDEBUG) Serial.println("sTempPlancher " + sTempPlancher);
         //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
         //if (SERDEBUG) Serial.println("Courant " + sCourant);
 
-        // Changement de couleur des valeurs Min ou Max selon tendance de la temp ext.
+        // Changement de couleur des valeurs Min ou Max selon tendance de la Temp ext.
         lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
         if (rTempExt > rAvgTempExt) {
@@ -160,7 +137,7 @@ void ReadModbus() {
           lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
         }
 
-        // Changement de couleur de la Temp Ext. selon 
+        // Changement de couleur de la Temp Ext. selon seuils
         lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
         if (rTempExt > 25.0) {
           lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -184,11 +161,11 @@ void ReadModbus() {
         lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
         lv_label_set_text(ui_LblValCourant, sCourant.c_str());
 
-        lv_label_set_text(ui_LblValConsoJEau, String(rConsoEauJ).c_str());
-        lv_label_set_text(ui_LblValConsoJElec, String(rConsoElecJ).c_str());
+        lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
+        lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
         lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
-        lv_label_set_text(ui_LblValConsoJ1Eau, (String(rConsoEauJ1) + " l").c_str());
-        lv_label_set_text(ui_LblValConsoJ1Elec, (String(rConsoElecJ1) + " Kwh").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Eau, (String(iConsoEauJ1) + " L").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Elec, (String(iConsoElecJ1) + " Kwh").c_str());
         lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
 
         // Traitement animation des BPs sur retour MBus
@@ -255,14 +232,6 @@ void ReadModbus() {
           }
           Serial.println(" ");
           Serial.println("Coils Values:");
-          /*
-          for (int i = 0; i < NB_OUTPUT1; i++) {
-            Serial.print("Coil ");
-            Serial.print(i);
-            Serial.print(": ");
-            Serial.println(MBresultCL1[i]);
-          }
-          */
           Serial.println(" ");
           Serial.println("Animations Values:");
           for (int i = 0; i < NB_REGS_ANIM; i++) {
@@ -327,6 +296,8 @@ float fnAverage(float fInput) { /* function fnAverage */
   //Perform average on sensor readings
   float average;
   static float total;
+  static float fAvgFiFo[NBAVGFIFO];
+
   // subtract the last reading:
   total = total - fAvgFiFo[iReadIndex];
   // read the sensor:
@@ -335,17 +306,17 @@ float fnAverage(float fInput) { /* function fnAverage */
   total = total + fAvgFiFo[iReadIndex];
   // handle index
   iReadIndex ++;
-  if (iReadIndex >= iAvgMaxFifo) {
+  if (iReadIndex >= NBAVGFIFO) {
     iReadIndex = 0;
   }
-  if (iStartIndex < iAvgMaxFifo) {
+  if (iStartIndex < NBAVGFIFO) {
     iStartIndex++;
   }
 
   // calculate the average:
-  average = total / iAvgMaxFifo;
+  average = total / NBAVGFIFO;
 
-  if (iStartIndex >= iAvgMaxFifo) {
+  if (iStartIndex >= NBAVGFIFO) {
     return average;
   } else {
     return fInput;
