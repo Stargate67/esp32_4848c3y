@@ -17,24 +17,6 @@ class Tempos{
         bool Reset();
 };
 
-//extern Tempos TpoMesAcquite();  // tempo pour Raz Message acquité
-
-/*
-constexpr char* sMsgAlarme[16]= {
-    "TEST 1 Alarm"
-    ,"ALARME CHAUDIERE"
-    ,"DEFAUT PRESSION CIRCUIT EAU"
-    ,"DEFAUT PRESSION BASSE CIRCUIT EAU"
-    ,"PORTE DE GARAGE 1 OUVERTE"
-    ,"PROBLEME REGULATION PLANCHER"
-    ,"ALARME ModbusTcp"
-    ,"ALARME ModbusRtu"
-    ,"Temp Exterieure > Temp Salon"
-    ,"Temp Exterieure < Temp Salon"
-};
-*/
-
-
 // SCREEN: scr
 void ui_Screen1_screen_init(void);
 //extern lv_obj_t * ui_Screen1;

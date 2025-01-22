@@ -75,8 +75,6 @@ void ReadModbus() {
         mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
         mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
-        //mb.task();
-        //delay(5);
         prevmillis1 = millis();
         iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
@@ -146,9 +144,7 @@ void ReadModbus() {
         int rConsoElecJ1 = int(MBresultANA1[17]);
         int rConsoEauJ = int(MBresultANA1[18]); 
         int rConsoEauJ1 = int(MBresultANA1[19]); 
-        //float rConsoGazJ = round(MBresultANA1[20]*10.0)/1000.0;
         String sConsoGazJ = String(round(MBresultANA1[20]*10.0)/1000.0);
-        //float rConsoGazJ1 = round(MBresultANA1[21]*10.0)/1000.0; 
         String sConsoGazJ1 = String(round(MBresultANA1[21]*10.0)/1000.0) + " Nm3";
 
         //if (SERDEBUG) Serial.println("sTempPlancher " + sTempPlancher);

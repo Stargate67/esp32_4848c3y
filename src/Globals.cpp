@@ -147,7 +147,7 @@ Alarmes PLC
                 sMessage = (sMessage + sPrefix + "9 Temp. Ext > Temp. Fermer les volets!  ");
             }
             if (memoXorAlarm & 0b10000000000) { // Bit10
-                sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenêtres!  ");
+                sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenetres!  ");
             }
             if (memoXorAlarm & 0b100000000000) { // Bit11
                 sMessage = (sMessage + sPrefix + "Alarme Bit 11  ");
