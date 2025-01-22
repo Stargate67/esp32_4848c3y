@@ -33,6 +33,7 @@ lv_obj_t * ui_LblTempMax;
 lv_obj_t * ui_LblHeureMax;
 
 lv_obj_t * ui_LblValPlancher;
+lv_obj_t * ui_LblValConsPlancher;
 lv_obj_t * ui_LblValECS;
 lv_obj_t * ui_LblValRadiat;
 lv_obj_t * ui_LblValDebitRadit;
@@ -121,40 +122,38 @@ void ReadModbus() {
       // Lecture des valeurs dans le buffer MB et mise ne forme
       case 20:
       {
-        float rTempSal = round(MBresultANA1[0] * 100.0 / 10.0)/100.0;
-        String sTempSal = "Sal:  " + String(rTempSal) + " °C";
-
-        float rTempPlancher;
-        rTempPlancher = round(MBresultANA1[1]*1.0)/10.0;
-        String sTempPlancher = String(rTempPlancher) + "°C";
-
-        float rTempECS = round(MBresultANA1[2]*1.0)/10.0; // 1 digits 
-        String sTempECS = String(rTempECS) + "°C";
-
-        float rTempRadiat = int(MBresultANA1[5])/10.0; // 1 digits 
-        float rDebitRadiat = int(MBresultANA1[7])/10.0; // 1 digits 
-
-        float rCourant = round(MBresultANA1[15]/100.0)/10.0; // 1 digits
-        if (SERDEBUG) Serial.println("sTempPlancher " + String(rTempPlancher));
-        if (SERDEBUG) Serial.println("TempECS " + String(rTempECS));
-        if (SERDEBUG) Serial.println("Courant " + String(rCourant));
-
-        int rConsoEauJ = int(MBresultANA1[16]); 
-        int rConsoEauJ1 = int(MBresultANA1[17]); 
-        int rConsoElecJ = int(MBresultANA1[18]); 
-        int rConsoElecJ1 = int(MBresultANA1[19]);
-
-        float rConsoGazJ = round(MBresultANA1[20])/100;
-        String sConsoGazJ = String(rConsoGazJ);
-
-        float rConsoGazJ1 = MBresultANA1[21]/100; 
-        String sConsoGazJ1 = String(rConsoGazJ1) + "Nm3";
 
         float rTmp = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
         String sTempExt = String(rTempExt) + " °C";
         // Calcul la moyenne 
         float rAvgTempExt = round(fnAverage(rTempExt) * 100.0) / 100.0;
+
+        String sTempSal = "Sal:  " + String(MBresultANA1[0]/10.0, 2) + " °C";
+
+        // Container Val ANA1 
+        String sTempPlancher = String(MBresultANA1[1]/10.0, 1) + " °C";
+        String sConsPlancher = String(MBresultANA1[12]/10.0, 1) + " °C";
+        String sTempECS = String(MBresultANA1[2]/10.0, 1)+ " °C"; // 1 digits 
+
+        // Container Val ANA2 
+        String sTempRadiat = String(MBresultANA1[5]/10.0, 1)+ " °C"; // 1 digits 
+        String sDebitRadiat = String(MBresultANA1[7]/10.0, 1)+ " l/m"; // 1 digits 
+        String sCourant = String(MBresultANA1[15]/1000.0, 1)+ " A"; // 3 digits vers 1 digits
+
+        // Container CONSO 
+        int rConsoElecJ = int(MBresultANA1[16]); 
+        int rConsoElecJ1 = int(MBresultANA1[17]);
+        int rConsoEauJ = int(MBresultANA1[18]); 
+        int rConsoEauJ1 = int(MBresultANA1[19]); 
+        //float rConsoGazJ = round(MBresultANA1[20]*10.0)/1000.0;
+        String sConsoGazJ = String(round(MBresultANA1[20]*10.0)/1000.0);
+        //float rConsoGazJ1 = round(MBresultANA1[21]*10.0)/1000.0; 
+        String sConsoGazJ1 = String(round(MBresultANA1[21]*10.0)/1000.0) + " Nm3";
+
+        //if (SERDEBUG) Serial.println("sTempPlancher " + sTempPlancher);
+        //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
+        //if (SERDEBUG) Serial.println("Courant " + sCourant);
 
         // Changement de couleur des valeurs Min ou Max selon tendance de la temp ext.
         lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -183,10 +182,11 @@ void ReadModbus() {
         lv_label_set_text(ui_LblHeureMax, (sExtMaxTimeStp).c_str());
 
         lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
+        lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
         lv_label_set_text(ui_LblValECS, sTempECS.c_str());
-        lv_label_set_text(ui_LblValRadiat, (String(rTempRadiat) + " °C").c_str());
-        lv_label_set_text(ui_LblValDebitRadit, (String(rDebitRadiat) + " l/m").c_str());
-        lv_label_set_text(ui_LblValCourant, (String(rCourant) + " A").c_str());
+        lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
+        lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
+        lv_label_set_text(ui_LblValCourant, sCourant.c_str());
 
         lv_label_set_text(ui_LblValConsoJEau, String(rConsoEauJ).c_str());
         lv_label_set_text(ui_LblValConsoJElec, String(rConsoElecJ).c_str());
@@ -209,7 +209,7 @@ void ReadModbus() {
         if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
           bBoostChaud = 1;
           bCdeRelaisR2 = 1;
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 0, 160, 0 ), 0 );
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 255, 130, 0 ), 0 );
         } else {
           bBoostChaud = 0;
           bCdeRelaisR2 = 0;

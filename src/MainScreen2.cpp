@@ -6,7 +6,7 @@ lv_obj_t * ui_Cont1Val;
 lv_obj_t * ui_LblPlancher;
 //lv_obj_t * ui_LblValPlancher;
 lv_obj_t * ui_LblConsPlancher;
-lv_obj_t * ui_LblValConsPlancher;
+//lv_obj_t * ui_LblValConsPlancher;
 lv_obj_t * ui_LblECS;
 //lv_obj_t * ui_LblValECS;
 
@@ -32,6 +32,7 @@ lv_obj_t * ui_LblTitreConso;
 
 void ui_Screen1_screen_init_1(lv_obj_t *parent) {
 
+    // ===========  CONTAINER 1 Val ANA  =============================
     ui_Cont1Val = lv_obj_create(parent);
     lv_obj_remove_style_all(ui_Cont1Val);
     lv_obj_set_width(ui_Cont1Val, 239);
@@ -122,6 +123,7 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_style_text_opa(ui_LblValECS, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblValECS, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    // ===========  CONTAINER 2 Valeur ANA  =============================
     ui_Cont2Val = lv_obj_create(parent);
     lv_obj_remove_style_all(ui_Cont2Val);
     lv_obj_set_width(ui_Cont2Val, 240);
@@ -212,6 +214,8 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_style_text_opa(ui_LblValCourant, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblValCourant, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    // ===========  CONTAINER CONSO  =============================
+ 
     ui_ContConso = lv_obj_create(parent);
     lv_obj_remove_style_all(ui_ContConso);
     lv_obj_set_width(ui_ContConso, 330);
@@ -248,6 +252,20 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_style_text_opa(ui_LblValConsoJEau, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblValConsoJEau, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_LblValConsoJ1Eau = lv_label_create(ui_ContConso);
+    lv_obj_set_width(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);   /// 480
+    lv_obj_set_height(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);    /// 50
+    lv_obj_set_x(ui_LblValConsoJ1Eau, -45);
+    lv_obj_set_y(ui_LblValConsoJ1Eau, 19);
+    lv_obj_set_align(ui_LblValConsoJ1Eau, LV_ALIGN_TOP_RIGHT);
+    lv_label_set_long_mode(ui_LblValConsoJ1Eau, LV_LABEL_LONG_SCROLL);
+    lv_label_set_text(ui_LblValConsoJ1Eau, "XXXX l");
+    lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Eau, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scroll_dir(ui_LblValConsoJ1Eau, LV_DIR_LEFT);
+    lv_obj_set_style_text_color(ui_LblValConsoJ1Eau, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_LblValConsoJ1Eau, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_LblValConsoJ1Eau, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     ui_LblConsoElec = lv_label_create(ui_ContConso);
     lv_obj_set_width(ui_LblConsoElec, LV_SIZE_CONTENT);   /// 480
     lv_obj_set_height(ui_LblConsoElec, LV_SIZE_CONTENT);    /// 50
@@ -274,6 +292,20 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_style_text_color(ui_LblValConsoJElec, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LblValConsoJElec, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblValConsoJElec, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_LblValConsoJ1Elec = lv_label_create(ui_ContConso);
+    lv_obj_set_width(ui_LblValConsoJ1Elec, LV_SIZE_CONTENT);   /// 480
+    lv_obj_set_height(ui_LblValConsoJ1Elec, LV_SIZE_CONTENT);    /// 50
+    lv_obj_set_x(ui_LblValConsoJ1Elec, 0);
+    lv_obj_set_y(ui_LblValConsoJ1Elec, 47);
+    lv_obj_set_align(ui_LblValConsoJ1Elec, LV_ALIGN_TOP_RIGHT);
+    lv_label_set_long_mode(ui_LblValConsoJ1Elec, LV_LABEL_LONG_SCROLL);
+    lv_label_set_text(ui_LblValConsoJ1Elec, "XXXX Kwh");
+    lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Elec, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scroll_dir(ui_LblValConsoJ1Elec, LV_DIR_LEFT);
+    lv_obj_set_style_text_color(ui_LblValConsoJ1Elec, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_LblValConsoJ1Elec, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_LblValConsoJ1Elec, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_LblConsoGaz = lv_label_create(ui_ContConso);
     lv_obj_set_width(ui_LblConsoGaz, LV_SIZE_CONTENT);   /// 480
@@ -302,34 +334,6 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_style_text_opa(ui_LblValConsoJGaz, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LblValConsoJGaz, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_LblValConsoJ1Elec = lv_label_create(ui_ContConso);
-    lv_obj_set_width(ui_LblValConsoJ1Elec, LV_SIZE_CONTENT);   /// 480
-    lv_obj_set_height(ui_LblValConsoJ1Elec, LV_SIZE_CONTENT);    /// 50
-    lv_obj_set_x(ui_LblValConsoJ1Elec, 0);
-    lv_obj_set_y(ui_LblValConsoJ1Elec, 47);
-    lv_obj_set_align(ui_LblValConsoJ1Elec, LV_ALIGN_TOP_RIGHT);
-    lv_label_set_long_mode(ui_LblValConsoJ1Elec, LV_LABEL_LONG_SCROLL);
-    lv_label_set_text(ui_LblValConsoJ1Elec, "XXXX Kwh");
-    lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Elec, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_scroll_dir(ui_LblValConsoJ1Elec, LV_DIR_LEFT);
-    lv_obj_set_style_text_color(ui_LblValConsoJ1Elec, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_LblValConsoJ1Elec, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_LblValConsoJ1Elec, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_LblValConsoJ1Eau = lv_label_create(ui_ContConso);
-    lv_obj_set_width(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);   /// 480
-    lv_obj_set_height(ui_LblValConsoJ1Eau, LV_SIZE_CONTENT);    /// 50
-    lv_obj_set_x(ui_LblValConsoJ1Eau, -45);
-    lv_obj_set_y(ui_LblValConsoJ1Eau, 19);
-    lv_obj_set_align(ui_LblValConsoJ1Eau, LV_ALIGN_TOP_RIGHT);
-    lv_label_set_long_mode(ui_LblValConsoJ1Eau, LV_LABEL_LONG_SCROLL);
-    lv_label_set_text(ui_LblValConsoJ1Eau, "XXXX l");
-    lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Eau, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_scroll_dir(ui_LblValConsoJ1Eau, LV_DIR_LEFT);
-    lv_obj_set_style_text_color(ui_LblValConsoJ1Eau, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_LblValConsoJ1Eau, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_LblValConsoJ1Eau, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
-
     ui_LblValConsoJ1Gaz = lv_label_create(ui_ContConso);
     lv_obj_set_width(ui_LblValConsoJ1Gaz, LV_SIZE_CONTENT);   /// 480
     lv_obj_set_height(ui_LblValConsoJ1Gaz, LV_SIZE_CONTENT);    /// 50
@@ -338,7 +342,7 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_obj_set_align(ui_LblValConsoJ1Gaz, LV_ALIGN_TOP_RIGHT);
     lv_label_set_long_mode(ui_LblValConsoJ1Gaz, LV_LABEL_LONG_SCROLL);
     lv_label_set_text(ui_LblValConsoJ1Gaz, "XXX Nm3");
-   lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Gaz, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scrollbar_mode(ui_LblValConsoJ1Gaz, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_scroll_dir(ui_LblValConsoJ1Gaz, LV_DIR_LEFT);
     lv_obj_set_style_text_color(ui_LblValConsoJ1Gaz, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LblValConsoJ1Gaz, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -350,5 +354,4 @@ void ui_Screen1_screen_init_1(lv_obj_t *parent) {
     lv_label_set_text(ui_LblTitreConso, "Conso.           Jour            Jour-1");
     lv_obj_set_style_text_color(ui_LblTitreConso, lv_color_hex(0x0069FF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LblTitreConso, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
 }

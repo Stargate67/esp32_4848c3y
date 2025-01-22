@@ -53,6 +53,7 @@ extern lv_obj_t * ui_LblHeureMax;
 
 
 extern lv_obj_t * ui_LblValPlancher;
+extern lv_obj_t * ui_LblValConsPlancher;
 extern lv_obj_t * ui_LblValECS;
 extern lv_obj_t * ui_LblValRadiat;
 extern lv_obj_t * ui_LblValDebitRadit;
