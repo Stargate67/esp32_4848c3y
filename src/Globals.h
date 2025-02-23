@@ -41,6 +41,9 @@ extern lv_obj_t * ui_LblValRadiat;
 extern lv_obj_t * ui_LblValDebitRadit;
 extern lv_obj_t * ui_LblValCourant;
 
+extern lv_obj_t * ui_LblValConsoInstEau;
+extern lv_obj_t * ui_LblValConsoInstElec;
+extern lv_obj_t * ui_LblValConsoInstGaz;
 extern lv_obj_t * ui_LblValConsoJEau;
 extern lv_obj_t * ui_LblValConsoJElec;
 extern lv_obj_t * ui_LblValConsoJGaz;

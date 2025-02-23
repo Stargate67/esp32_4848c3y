@@ -41,6 +41,9 @@ lv_obj_t * ui_LblValRadiat;
 lv_obj_t * ui_LblValDebitRadit;
 lv_obj_t * ui_LblValCourant;
 
+lv_obj_t * ui_LblValConsoInstEau;
+lv_obj_t * ui_LblValConsoInstElec;
+lv_obj_t * ui_LblValConsoInstGaz;
 lv_obj_t * ui_LblValConsoJEau;
 lv_obj_t * ui_LblValConsoJElec;
 lv_obj_t * ui_LblValConsoJGaz;
@@ -164,6 +167,9 @@ void ReadModbus() {
         lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
         lv_label_set_text(ui_LblValCourant, sCourant.c_str());
 
+        lv_label_set_text(ui_LblValConsoInstEau, String(iConsoEauInst).c_str());
+        lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst).c_str());
+        lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
         lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
         lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
         lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
