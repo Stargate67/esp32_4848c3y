@@ -116,13 +116,16 @@ void ReadModbus() {
         String sDebitRadiat = String(MBresultANA1[7]/10.0, 1)+ " l/m"; // 1 digits 
         String sCourant = String(MBresultANA1[15]/1000.0, 1)+ " A"; // 3 digits vers 1 digits
 
-        // Container CONSO 
-        int iConsoElecJ = int(MBresultANA1[16]); 
-        int iConsoElecJ1 = int(MBresultANA1[17]);
-        int iConsoEauJ = int(MBresultANA1[18]); 
-        int iConsoEauJ1 = int(MBresultANA1[19]); 
-        String sConsoGazJ = String(MBresultANA1[20]/100.0, 2);
-        String sConsoGazJ1 = String(MBresultANA1[21]/100.0, 2) + " Nm3";
+        // Container CONSO
+        int iConsoElecInst = int(MBresultANA1[16]);  
+        int iConsoElecJ = int(MBresultANA1[17]); 
+        int iConsoElecJ1 = int(MBresultANA1[18]);
+        int iConsoEauInst = int(MBresultANA1[19]);
+        int iConsoEauJ = int(MBresultANA1[20]); 
+        int iConsoEauJ1 = int(MBresultANA1[21]);
+        String sConsoGazInst = String(MBresultANA1[22]/100.0, 2); 
+        String sConsoGazJ = String(MBresultANA1[23]/100.0, 2);
+        String sConsoGazJ1 = String(MBresultANA1[24]/100.0, 2) + " Nm3";
 
         //if (SERDEBUG) Serial.println("sTempPlancher " + sTempPlancher);
         //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
