@@ -168,7 +168,7 @@ void ReadModbus() {
         lv_label_set_text(ui_LblValCourant, sCourant.c_str());
 
         lv_label_set_text(ui_LblValConsoInstEau, String(iConsoEauInst).c_str());
-        lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst).c_str());
+        lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst/100.0, 2).c_str());
         lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
         lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
         lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
