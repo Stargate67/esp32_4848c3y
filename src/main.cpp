@@ -13,6 +13,12 @@ void UpdateTickers(void);
 int TmpDay;
 struct tm timeinfo;
 
+// Attribue une adresse Ip fixe, la passerelle par défaut et le masque de sous-réseau.
+IPAddress IP(192, 168, 0, 115);      //adresse fixe
+IPAddress gateway(192, 168, 0, 254);      //passerelle par défaut
+IPAddress subnet(255, 255, 255, 0);     //masque de sous réseau
+IPAddress dns(192, 168, 0, 254);  //DNS
+
 WiFiClient client;
 
 String sClockHHMMSS;
@@ -79,7 +85,8 @@ void printLocalTime(){
 }
 
 void startWifi(){
-  
+
+  WiFi.config(IP,gateway,subnet,dns);  
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {

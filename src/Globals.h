@@ -17,6 +17,7 @@ class Tempos{
         bool Reset();
 };
 
+
 // SCREEN: scr
 void ui_Screen1_screen_init(void);
 //extern lv_obj_t * ui_Screen1;
