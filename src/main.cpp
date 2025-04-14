@@ -33,7 +33,7 @@ lv_obj_t *ClockLabel;
 Tempos TimerScan10ms(10);
 Tempos TimerScan50ms(50);
 Tempos TimerScan100ms(100);
-Tempos TimerCheckWifi(60000);
+Tempos TimerCheckWifi(15000);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
@@ -134,6 +134,7 @@ void UpdateTickers(){
 }
 
 //************************************************************************************************************/
+//                                         MAIN SETUP
 //============================================================================================================/
 void setup()
 {
@@ -158,7 +159,9 @@ void setup()
 }
 
 
-
+//************************************************************************************************************/
+//                                           MAIN LOOP 
+//============================================================================================================/
 
 void loop() {
   ArduinoOTA.handle();
@@ -219,7 +222,9 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED) {
       //Serial.print(millis());
       //Serial.println("Reconnecting to WiFi...");
-      lv_label_set_text(IPLabel, "Reconnexion WIFI en cours...");
+      String sPrefix = "/!\\ " + sClockHHMM + " ";
+      String sMessage = sPrefix + "Plus de WIFI Stargate. Reconnexion en cours.";
+      lv_label_set_text(AlarmLabel, sMessage.c_str());
       delay(100);
       UpdateTickers();
       WiFi.disconnect();
