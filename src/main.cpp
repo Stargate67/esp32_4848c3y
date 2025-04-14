@@ -33,6 +33,7 @@ lv_obj_t *ClockLabel;
 Tempos TimerScan10ms(10);
 Tempos TimerScan50ms(50);
 Tempos TimerScan100ms(100);
+Tempos TimerCheckWifi(60000);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
@@ -86,7 +87,7 @@ void printLocalTime(){
 
 void startWifi(){
 
-  WiFi.config(IP,gateway,subnet,dns);  
+  WiFi.config(IP, gateway, subnet, dns);  
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -156,55 +157,75 @@ void setup()
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
 
+
+
+
 void loop() {
   ArduinoOTA.handle();
   UpdateTickers();
 
   // ========  Main Tasks à 10ms  =========== 
   if (TimerScan10ms.Q()){ // 10ms
-    ReadModbus();
-    mb.task(); // Tache principale Traitement ModbusTCP
+    if (WiFi.status() == WL_CONNECTED) {
+      ReadModbus();
+      mb.task(); // Tache principale Traitement ModbusTCP
+    }
     TimerScan10ms.Reset();
   }
 
   // ========  Main Tasks à 100ms  =========== 
-  if (TimerScan100ms.Q()){ // 10ms
+  if (TimerScan100ms.Q()){ // 100ms
     Relays();
     AcquitMesAlarme();
 
-    if (!getLocalTime(&timeinfo)) {
-      lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
-      return;
+    if (WiFi.status() == WL_CONNECTED) {
+      if (!getLocalTime(&timeinfo)) {
+        lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
+        return;
+      }
+
+      // Display clock
+      sClockHHMMSS = 
+        (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+        + ":" + 
+        (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+        + ":" + 
+        (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
+        ;
+      
+      sClockHHMM = 
+        (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
+        + ":" + 
+        (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
+        ;
+      lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
+
+      // Display Date 
+      if (timeinfo.tm_mday != TmpDay) {
+        //printLocalTime();
+        sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
+
+        sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
+
+        if (SERDEBUG) Serial.println("Date: " + sPrintdate);
+        TmpDay = timeinfo.tm_mday;
+      }
     }
+    TimerScan100ms.Reset();
+  }
 
-    // Display clock
-    sClockHHMMSS = 
-      (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-      + ":" + 
-      (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-      + ":" + 
-      (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
-      ;
-    
-    sClockHHMM = 
-      (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-      + ":" + 
-      (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-      ;
-    lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
-
-    // Display Date 
-    if (timeinfo.tm_mday != TmpDay) {
-      //printLocalTime();
-      sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
-
-      sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
-
-      if (SERDEBUG) Serial.println("Date: " + sPrintdate);
-      TmpDay = timeinfo.tm_mday;
+  // ========  Check Wifi each minute  =========== 
+  if (TimerCheckWifi.Q()) { // 1mn
+    if (WiFi.status() != WL_CONNECTED) {
+      //Serial.print(millis());
+      //Serial.println("Reconnecting to WiFi...");
+      lv_label_set_text(IPLabel, "Reconnexion WIFI en cours...");
+      delay(100);
+      UpdateTickers();
+      WiFi.disconnect();
+      WiFi.reconnect();
     }
-
-  TimerScan100ms.Reset();
+    TimerCheckWifi.Reset();
   }
 }
 
