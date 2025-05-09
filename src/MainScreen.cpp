@@ -399,7 +399,7 @@ void lv_CreateIPLabel(lv_obj_t * parent)
 void lv_CreateAlarm(lv_obj_t * parent)
 {
     AlarmLabel = lv_label_create(parent);
-    lv_obj_set_width(AlarmLabel, 340);
+    lv_obj_set_size(AlarmLabel, 340, 25);
     lv_label_set_text(AlarmLabel, "");
     lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(AlarmLabel, lv_color_make(255, 0, 0), 0); //Red
