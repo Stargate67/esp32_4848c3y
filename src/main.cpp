@@ -169,11 +169,15 @@ void loop() {
 
   // ========  Main Tasks à 10ms  =========== 
   if (TimerScan10ms.Q()){ // 10ms
+    String sMesAlarme = "";
     if (WiFi.status() == WL_CONNECTED) {
       ReadModbus();
       mb.task(); // Tache principale Traitement ModbusTCP
     }
     TimerScan10ms.Reset();
+
+    sMesAlarme = "MB iState=" + String(iState) + " Wifi=" + WiFi.status();
+    lv_label_set_text(AlarmLabel, sMesAlarme.c_str());
   }
 
   // ========  Main Tasks à 100ms  =========== 

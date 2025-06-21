@@ -59,7 +59,7 @@ void DisplayAlarms(uint16_t MBAlarm);
 void AcquitMesAlarme();
 
 extern bool bAcquitAlarme;
-
+extern int iState;
 extern ModbusIP mb;  //ModbusIP object
 
 extern String sClockHHMMSS;

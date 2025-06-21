@@ -14,7 +14,9 @@ ModbusIP mb;
 unsigned long prevmillis1;
 unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
 unsigned long TransactMillis1;    // Timeout Transaction
+
 int iState = 0;
+
 String sExtMaxTimeStp = "NA:NA";
 String sExtMinTimeStp = "NA:NA";
 //const int iAvgMaxFifo;
@@ -218,8 +220,14 @@ void ReadModbus() {
           lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
         }
         
+
+
+
         // Traitement Affichage des alarmes.
-        DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+        // DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+
+
+
 
         // ******  DEBUG  ***********
         if (SERDEBUG) { 
@@ -259,6 +267,7 @@ void ReadModbus() {
           LastModbusRequest = millis();
           iState = 0;  // On recommence
           if (SERDEBUG) Serial.println(String(iState));
+          
         }
       }
       break;
