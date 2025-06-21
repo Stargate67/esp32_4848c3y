@@ -33,7 +33,7 @@ lv_obj_t *ClockLabel;
 Tempos TimerScan10ms(10);
 Tempos TimerScan50ms(50);
 Tempos TimerScan100ms(100);
-Tempos TimerCheckWifi(15000);
+Tempos TimerCheckWifi(3000);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
@@ -232,6 +232,7 @@ void loop() {
       delay(100);
       UpdateTickers();
       WiFi.disconnect();
+      delay(2000);
       WiFi.reconnect();
     }
     TimerCheckWifi.Reset();

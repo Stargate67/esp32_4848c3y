@@ -75,12 +75,12 @@ void ReadModbus() {
       case 5:
       { 
         // Read holding registers from Modbus Slave
-        //uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        //uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+        uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
         //uint16_t MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);
 
-        mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+        //mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        //mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
         prevmillis1 = millis();
         iState = 10;
