@@ -8,4 +8,4 @@
 float fnMin(float fInput);
 float fnMax(float fInput); 
 float fnAverage(float fInput);
-void ReadModbus();
+void MainModbus();

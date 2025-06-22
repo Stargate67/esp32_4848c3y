@@ -35,6 +35,8 @@ Tempos TimerScan50ms(50);
 Tempos TimerScan100ms(100);
 Tempos TimerCheckWifi(3000);
 
+IPAddress LocalIP;
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //                         FIN DES DECLARATIONS 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,8 +105,8 @@ void startWifi(){
   Serial.println("");
   Serial.println(WiFi.localIP());
   //String sLocalIP = WiFi.localIP().toString();
-  IPAddress LocalIP = WiFi.localIP();
-  lv_label_set_text_fmt(IPLabel, ".%d.%d", LocalIP[2], LocalIP[3]);
+  LocalIP = WiFi.localIP();
+  lv_label_set_text_fmt(IPLabel, ".%d.%d\nWifi:%d", LocalIP[2], LocalIP[3], WiFi.status());
   //(sLocalIP.substring( strlen(sLocalIP), -6)).c_str());
 }
 
@@ -169,21 +171,23 @@ void loop() {
 
   // ========  Main Tasks à 10ms  =========== 
   if (TimerScan10ms.Q()){ // 10ms
-    String sMesAlarme = "";
     if (WiFi.status() == WL_CONNECTED) {
-      ReadModbus();
+      MainModbus();
       mb.task(); // Tache principale Traitement ModbusTCP
     }
     TimerScan10ms.Reset();
-
-    sMesAlarme = "MB iState=" + String(iState) + " Wifi=" + WiFi.status();
-    lv_label_set_text(AlarmLabel, sMesAlarme.c_str());
   }
 
   // ========  Main Tasks à 100ms  =========== 
   if (TimerScan100ms.Q()){ // 100ms
+    String sMesAlarme = "";
+
     Relays();
     AcquitMesAlarme();
+
+    sMesAlarme = "MB iState=" + String(iState);
+    lv_label_set_text(AlarmLabel, sMesAlarme.c_str());
+    lv_label_set_text_fmt(IPLabel, ".%d.%d\nWifi:%d", LocalIP[2], LocalIP[3], WiFi.status());
 
     if (WiFi.status() == WL_CONNECTED) {
       if (!getLocalTime(&timeinfo)) {

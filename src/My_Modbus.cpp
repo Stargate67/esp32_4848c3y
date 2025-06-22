@@ -60,7 +60,7 @@ bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
 bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
 
-void ReadModbus() {
+void MainModbus() {
   //mb.task();
   switch (iState) {
     case 0:
@@ -265,7 +265,10 @@ void ReadModbus() {
     break;
 
     case 30:
-    {     // Wait MB_READ_INTERVAL sec
+    {     // Wait MB_READ_INTERVAL sec OR process Write modbus
+      if (mbWriteCoilAddress) {
+        iState = 90;
+      }
       if (millis() - LastModbusRequest >= MB_READ_INTERVAL) {
         LastModbusRequest = millis();
         iState = 0;  // On recommence
