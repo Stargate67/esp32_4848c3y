@@ -86,7 +86,7 @@ void printLocalTime(){
 }
 
 void startWifi(){
-
+  WiFi.mode(WIFI_STA);
   WiFi.config(IP, gateway, subnet, dns);  
   WiFi.begin(ssid, password);
 

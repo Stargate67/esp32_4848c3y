@@ -11,9 +11,9 @@
 
 ModbusIP mb;
 
-unsigned long prevmillis1;
+//unsigned long prevmillis1;
 unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
-unsigned long TransactMillis1;    // Timeout Transaction
+//unsigned long TransactMillis1;    // Timeout Transaction
 
 int iState = 0;
 
@@ -67,7 +67,7 @@ void ReadModbus() {
     switch (iState) {
       case 0:
       {
-        TransactMillis1 = millis();
+        //TransactMillis1 = millis();
         iState = 5;
       } 
       break;
@@ -75,14 +75,15 @@ void ReadModbus() {
       case 5:
       { 
         // Read holding registers from Modbus Slave
-        uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+        //uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        //uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+
         //uint16_t MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);
 
-        //mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-        //mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+        mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
+        mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
-        prevmillis1 = millis();
+        //prevmillis1 = millis();
         iState = 10;
         if (SERDEBUG) Serial.println("iState="+String(iState));
       } 
@@ -102,7 +103,6 @@ void ReadModbus() {
       // Lecture des valeurs dans le buffer MB et mise ne forme
       case 20:
       {
-
         float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
         //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
         String sTempExt = String(rTempExt, 2) + " °C";
@@ -234,9 +234,6 @@ void ReadModbus() {
           Serial.print("Avg T.Ext. = ");
           Serial.println(String(rAvgTempExt));
         }
-        LastModbusRequest = millis();
-        iState = 30;
-        
         if (SERDEBUG) {
           Serial.println("iState=" + String(iState));
         // Print holding register values
@@ -258,6 +255,8 @@ void ReadModbus() {
             Serial.println(MBresultANIM1[i]);
           }
         }
+        LastModbusRequest = millis();
+        iState = 30;
       }
       break;
 
@@ -267,7 +266,8 @@ void ReadModbus() {
           LastModbusRequest = millis();
           iState = 0;  // On recommence
           if (SERDEBUG) Serial.println(String(iState));
-          
+
+          mb.disconnect(MBremote);
         }
       }
       break;
