@@ -45,6 +45,7 @@ static const lv_color_t Btn_grad_colors[2] = {
 
 static void my_event_cb_R1Chaudiere (lv_event_t *e){
     compteur++;
+    if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
 
     lv_event_code_t code = lv_event_get_code(e);
     //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
@@ -52,10 +53,10 @@ static void my_event_cb_R1Chaudiere (lv_event_t *e){
     if (code == LV_EVENT_RELEASED) {
 
         if (bCdeRelaisR1) {
-            mb.writeCoil(MBremote, BP_ARRET_CHAUD, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_ARRET_CHAUD;
             bCdeRelaisR1 = 0;
         } else {
-            mb.writeCoil(MBremote, BP_MARCHE_CHAUD, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_MARCHE_CHAUD;
             bCdeRelaisR1 = 1;
         }
         if (BP_DEBUG) Serial.println("BP CHAUD: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_1));
@@ -67,14 +68,13 @@ static void my_event_cb_R2BoostCh (lv_event_t *e){
     if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
 
     lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
 
     if (code == LV_EVENT_RELEASED) {
         if ( bCdeRelaisR2 ) {
-            mb.writeCoil(MBremote, BP_ARRET_BOOST, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_ARRET_BOOST;
             bCdeRelaisR2 = 0;
         } else {
-            mb.writeCoil(MBremote, BP_MARCHE_BOOST, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_MARCHE_BOOST;
             bCdeRelaisR2 = 1;
         }
         if (BP_DEBUG) Serial.println("BP BOOST: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_2));
@@ -84,15 +84,16 @@ static void my_event_cb_R2BoostCh (lv_event_t *e){
 static void my_event_cb_R3PpeRadiateur (lv_event_t *e){
 
     lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
 
     if (code == LV_EVENT_RELEASED) {
         compteur++;
+        if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
+
         if (bCdeRelaisR3) {
-            mb.writeCoil(MBremote, BP_ARRET_RADIAT, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_ARRET_RADIAT;
             bCdeRelaisR3 = 0;
         } else {
-            mb.writeCoil(MBremote, BP_MARCHE_RADIAT, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_MARCHE_RADIAT;
             bCdeRelaisR3 = 1;
         }
         if (BP_DEBUG) Serial.println("BP RADIAT: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + digitalRead(RELAY_3));
@@ -102,15 +103,16 @@ static void my_event_cb_R3PpeRadiateur (lv_event_t *e){
 static void my_event_cb_PpePlancher (lv_event_t *e){
 
     lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
 
     if (code == LV_EVENT_RELEASED) {
         compteur++;
+        if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
+
         if (bRelay_4) {
-            mb.writeCoil(MBremote, BP_ARRET_PLANCHER, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_ARRET_PLANCHER;
             bRelay_4 = 0;
         } else {
-            mb.writeCoil(MBremote, BP_MARCHE_PLANCHER, 1, nullptr, 1);
+            mbWriteCoilAddress = BP_MARCHE_PLANCHER;
             bRelay_4 = 1;
         }
         if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
@@ -120,10 +122,11 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
 static void my_event_cb_AcqAlarmes (lv_event_t *e){
 
     lv_event_code_t code = lv_event_get_code(e);
-    //lv_obj_t *btn = (lv_obj_t*)lv_event_get_target(e);
 
     if (code == LV_EVENT_RELEASED) {
         compteur++;
+        if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
+
         bAcquitAlarme = 1;
 
         if (BP_DEBUG) Serial.println("Acquit Alarmes: event code=" + String(LV_EVENT_RELEASED));

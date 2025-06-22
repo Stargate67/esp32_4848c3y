@@ -116,6 +116,8 @@ extern lv_obj_t *AlarmLabel;
 extern lv_obj_t *ClockLabel;
 extern lv_obj_t *HorScrollArea;
 
+extern uint16_t mbWriteCoilAddress;
+
 constexpr uint16_t MB_READ_INTERVAL = 1000; 
 
 constexpr uint16_t START_REG = 12688;           // === Requete de Lectuer Modbus principale ===  Starting holding register
