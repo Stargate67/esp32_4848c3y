@@ -185,9 +185,7 @@ void loop() {
     Relays();
     AcquitMesAlarme();
 
-    sMesAlarme = "MB iState=" + String(iState);
-    lv_label_set_text(AlarmLabel, sMesAlarme.c_str());
-    lv_label_set_text_fmt(IPLabel, ".%d.%d\nWifi:%d", LocalIP[2], LocalIP[3], WiFi.status());
+    lv_label_set_text_fmt(IPLabel, ".%d.%d\nW:%d i:%d", LocalIP[2], LocalIP[3], WiFi.status(), iState);
 
     if (WiFi.status() == WL_CONNECTED) {
       if (!getLocalTime(&timeinfo)) {
