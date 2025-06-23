@@ -184,10 +184,11 @@ void loop() {
 
     Relays();
     AcquitMesAlarme();
-
-    lv_label_set_text_fmt(IPLabel, ".%d.%d\nW:%d i:%d", LocalIP[2], LocalIP[3], WiFi.status(), iState);
-
+    
     if (WiFi.status() == WL_CONNECTED) {
+      // Affichage top left corner Déroulement étapes Modbus et ad. IP
+      lv_label_set_text_fmt(IPLabel, ".%d.%d\ni:%d", LocalIP[2], LocalIP[3], iState);
+
       if (!getLocalTime(&timeinfo)) {
         lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
         return;
@@ -219,6 +220,9 @@ void loop() {
         if (SERDEBUG) Serial.println("Date: " + sPrintdate);
         TmpDay = timeinfo.tm_mday;
       }
+    } else {
+      // Si pas de connexion WIFI => Message plus complet top left corner
+      lv_label_set_text_fmt(IPLabel, ".%d.%d\nW:%d i:%d", LocalIP[2], LocalIP[3], WiFi.status(), iState);
     }
     TimerScan100ms.Reset();
   }
