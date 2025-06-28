@@ -154,7 +154,11 @@ void setup()
   startWifi();
   
   mb.client();
-  
+
+  // A TESTER    Set up Modbus registers
+  //mb.config();
+  //mb.addHreg(0, 123); // Example holding register value
+
   setupOTA("ESP32_4848SD_HOMIS_FY", ssid, password);
 
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
