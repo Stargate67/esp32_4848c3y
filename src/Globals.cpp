@@ -88,7 +88,6 @@ void Relays(){
     lv_label_set_text_fmt(lblBtnR3small, "R3=%d", digitalRead(RELAY_3));
 }
 
-
 void DisplayAlarms(const uint16_t MBAlarm){
 
     static String sMessage;
@@ -97,23 +96,23 @@ void DisplayAlarms(const uint16_t MBAlarm){
     /*
     Alarmes PLC 
 
-        '/!\ 0 ALARME CHAUDIERE'
-        ,'/!\ 1 PROBLEME REGULATION PLANCHER'
-        ,'/!\ 2 PORTE DE GARAGE OUVERTE'
-        ,'/!\ 3 DEFAUT PRESSION EAU'
-        ,'/!\ 4 TEST MESSAGE'
-        ,'/!\ 5 ALARME ModbusTcp'
-        ,'/!\ 6 ALARME ModbusRtu'
-        ,'/!\ 7 Courant > 4A'
-        ,'/!\ 8 Fuite d eau probable'
-        ,'/!\ 9 Temp. Ext > Temp. Salon'
-        ,'/!\ 10 Temp. Ext < Temp. Salon'
+         '0 ALARME CHAUDIERE'
+        ,'1 PROBLEME REGULATION PLANCHER'
+        ,'2 PORTE DE GARAGE OUVERTE'
+        ,'3 DEFAUT PRESSION EAU'
+        ,'4 TEST MESSAGE'
+        ,'5 ALARME ModbusTcp'
+        ,'6 ALARME ModbusRtu'
+        ,'7 Courant > 4A'
+        ,'8 Fuite d eau probable'
+        ,'9 Temp. Ext > Temp. Salon'
+        ,'10 Temp. Ext < Temp. Salon'
     */
 
     if ( MBAlarm ) {
         if ( MBAlarm != MemoHMBAlarme) { // Une alarme se rajoute
             //String sPrefix = "\n/!\\ " + sClockHHMM + " "; // A activer pour scroll verticale
-            String sPrefix = "/!\\ " + sClockHHMM + " ";
+            String sPrefix = "# " + sClockHHMM + " ";
 
             memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
 

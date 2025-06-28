@@ -75,7 +75,7 @@ void MainModbus() {
           iState = 5;
         }
       } else {
-        iState = 100;
+        iState = 99;
       }
     } 
     break;
@@ -228,10 +228,8 @@ void MainModbus() {
         lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
       }
       
-
       // Traitement Affichage des alarmes.
-      // DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
-
+      DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
 
       // ******  DEBUG  ***********
       if (SERDEBUG) { 
@@ -287,7 +285,7 @@ void MainModbus() {
     }
     break;
 
-    case 100:
+    case 99:
     {     
       if (SERDEBUG) Serial.println(String(iState));
       mb.connect(MBremote);

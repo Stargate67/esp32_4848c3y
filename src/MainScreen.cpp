@@ -1,4 +1,3 @@
-
 #include "Globals.h"
 #include "MainScreen.h"
 #include "MainScreen2.h"
@@ -402,11 +401,11 @@ void lv_CreateIPLabel(lv_obj_t * parent)
 void lv_CreateAlarm(lv_obj_t * parent)
 {
     AlarmLabel = lv_label_create(parent);
-    lv_obj_set_size(AlarmLabel, 340, 25);
+    lv_obj_set_size(AlarmLabel, 350, 25);
     lv_label_set_text(AlarmLabel, "");
     lv_obj_set_style_text_font(AlarmLabel, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(AlarmLabel, lv_color_make(255, 0, 0), 0); //Red
-    lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 40, 0); 
+    lv_obj_align(AlarmLabel, LV_ALIGN_TOP_LEFT, 35, 0);
     lv_label_set_long_mode(AlarmLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
     //lv_obj_set_scroll_dir(AlarmLabel, LV_DIR_LEFT);
 
@@ -418,9 +417,9 @@ void lv_CreateClock(lv_obj_t * parent)
 {    // Create a label
     ClockLabel = lv_label_create(parent); 
     lv_label_set_text(ClockLabel, "HH:MM:SS");
-    lv_obj_set_style_text_font(ClockLabel, &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_font(ClockLabel, &lv_font_montserrat_20, 0);
     lv_obj_set_style_text_color(ClockLabel, lv_color_white(), 0);
-    lv_obj_align(ClockLabel, LV_ALIGN_TOP_RIGHT, 0, 0); 
+    lv_obj_align(ClockLabel, LV_ALIGN_TOP_LEFT, 400, 3); 
 }
 
 void InitUI(){
