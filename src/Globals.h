@@ -62,14 +62,10 @@ extern bool bAcquitAlarme;
 extern int iState;
 extern ModbusIP mb;  //ModbusIP object
 
-//extern char * sClockHHMMSS;
-extern char * sClockHHMM;
-extern char * sDateDDMMYYYY;
-extern char * sShortDateDDMM;
-
-
-extern char * sExtMaxTimeStp;
-extern char * sExtMinTimeStp;
+//extern char *sClockHHMMSS;
+extern char *sClockHHMM;
+extern char *sDateDDMMYYYY;
+extern char *sShortDateDDMM;
 
 extern const int iAvgMaxFifo;
 extern float fAvgFiFo[];

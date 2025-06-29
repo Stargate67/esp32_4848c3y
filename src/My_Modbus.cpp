@@ -17,8 +17,11 @@ unsigned long LastModbusRequest;  // Variable to track the last Modbus request t
 
 int iState = 0;
 
-char * sExtMaxTimeStp = "NA:NA";
-char * sExtMinTimeStp = "NA:NA";
+const char *sExtMaxTimeStp = "NA:NA";
+const char *sExtMinTimeStp = "NA:NA";
+
+const char *sClock0000 = "00:00";
+
 //const int iAvgMaxFifo;
 //const int iAvgMaxFifo = 10;
 //float fAvgFiFo[iAvgMaxFifo];
@@ -306,7 +309,7 @@ float fnMax(float fInput) { /* function fnMax */
   //Perform Max Value 
   static float fMaxValue = fInput;
 
-  if (fInput > fMaxValue || sClockHHMM == "00:00" ) { 
+  if (fInput > fMaxValue || (strcmp(sClockHHMM, sClock0000)==0)) { 
 
     fMaxValue = fInput;
     sExtMaxTimeStp = sClockHHMM;
@@ -318,7 +321,7 @@ float fnMin(float fInput) { /* function fnMax */
   //Perform Max Value 
   static float fMinValue = fInput;
 
-  if (fInput < fMinValue || sClockHHMM == "00:00") { 
+  if (fInput < fMinValue || (strcmp(sClockHHMM, sClock0000)==0)) { 
     fMinValue = fInput;
     sExtMinTimeStp = sClockHHMM;
   }

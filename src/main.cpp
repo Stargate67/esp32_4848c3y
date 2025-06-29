@@ -21,10 +21,10 @@ IPAddress dns(192, 168, 0, 254);  //DNS
 
 WiFiClient client;
 
-//char * sClockHHMMSS;
-char * sClockHHMM;
-char * sDateDDMMYYYY;
-char * sShortDateDDMM;
+//char *sClockHHMMSS;
+char *sClockHHMM;
+char *sDateDDMMYYYY;
+char *sShortDateDDMM;
 
 lv_obj_t *IPLabel;
 lv_obj_t *AlarmLabel;
