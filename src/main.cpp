@@ -21,10 +21,10 @@ IPAddress dns(192, 168, 0, 254);  //DNS
 
 WiFiClient client;
 
-String sClockHHMMSS;
-String sClockHHMM;
-String sPrintdate;
-String sPrintShortdate;
+//char * sClockHHMMSS;
+char * sClockHHMM;
+char * sDateDDMMYYYY;
+char * sShortDateDDMM;
 
 lv_obj_t *IPLabel;
 lv_obj_t *AlarmLabel;
@@ -191,7 +191,7 @@ void loop() {
     
     if (WiFi.status() == WL_CONNECTED) {
       // Affichage top left corner Déroulement étapes Modbus et ad. IP
-      lv_label_set_text_fmt(IPLabel, ".%d.%d\ni:%d", LocalIP[2], LocalIP[3], iState);
+      lv_label_set_text_fmt(IPLabel, LV_SYMBOL_WIFI".%d.%d\ni:%02d", LocalIP[2], LocalIP[3], iState);
 
       if (!getLocalTime(&timeinfo)) {
         lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
@@ -199,29 +199,17 @@ void loop() {
       }
 
       // Display clock
-      sClockHHMMSS = 
-        (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-        + ":" + 
-        (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-        + ":" + 
-        (String(timeinfo.tm_sec).length() > 1 ? String(timeinfo.tm_sec) : "0" + String(timeinfo.tm_sec))
-        ;
-      
-      sClockHHMM = 
-        (String(timeinfo.tm_hour).length() > 1 ? String(timeinfo.tm_hour) : "0" + String(timeinfo.tm_hour))
-        + ":" + 
-        (String(timeinfo.tm_min).length() > 1 ? String(timeinfo.tm_min) : "0" + String(timeinfo.tm_min))
-        ;
-      lv_label_set_text(ClockLabel, sClockHHMMSS.c_str());
+      lv_label_set_text_fmt(ClockLabel, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      //sprintf(sClockHHMMSS, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      sprintf(sClockHHMM, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
       // Display Date 
       if (timeinfo.tm_mday != TmpDay) {
         //printLocalTime();
-        sPrintdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1))+ "/" + String(timeinfo.tm_year+1900);
+        sprintf(sDateDDMMYYYY, "%02d/%02d/%04d", timeinfo.tm_mday, timeinfo.tm_mon+1, timeinfo.tm_year+1900);
+        sprintf(sShortDateDDMM, "%02d/%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
 
-        sPrintShortdate = (String(timeinfo.tm_mday).length() > 1 ? String(timeinfo.tm_mday) : "0" + String(timeinfo.tm_mday)) + "/" + (String(timeinfo.tm_mon+1).length() > 1 ? String(timeinfo.tm_mon+1) : "0" + String(timeinfo.tm_mon+1));
-
-        if (SERDEBUG) Serial.println("Date: " + sPrintdate);
+        if (SERDEBUG) Serial.println("Date: " + String(sDateDDMMYYYY));
         TmpDay = timeinfo.tm_mday;
       }
     } else {
@@ -236,7 +224,7 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED) {
       //Serial.print(millis());
       //Serial.println("Reconnecting to WiFi...");
-      String sPrefix = "/!\\ " + sClockHHMM + " ";
+      String sPrefix = "# " + String(sClockHHMM) + " ";
       String sMessage = sPrefix + "Plus de WIFI Stargate. Reconnexion en cours.";
       lv_label_set_text(AlarmLabel, sMessage.c_str());
       delay(100);

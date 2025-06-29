@@ -17,8 +17,8 @@ unsigned long LastModbusRequest;  // Variable to track the last Modbus request t
 
 int iState = 0;
 
-String sExtMaxTimeStp = "NA:NA";
-String sExtMinTimeStp = "NA:NA";
+char * sExtMaxTimeStp = "NA:NA";
+char * sExtMinTimeStp = "NA:NA";
 //const int iAvgMaxFifo;
 //const int iAvgMaxFifo = 10;
 //float fAvgFiFo[iAvgMaxFifo];
@@ -162,13 +162,13 @@ void MainModbus() {
         lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFB2626), LV_PART_MAIN | LV_STATE_DEFAULT);
       }
 
-      lv_label_set_text(ui_LblDate, sPrintdate.c_str());
+      lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
       lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
       lv_label_set_text(ui_LblTempMin, (String(fnMin(rTempExt)) + " °C").c_str());
       lv_label_set_text(ui_LblTempMax, (String(fnMax(rTempExt)) + " °C").c_str());
       lv_label_set_text(ui_LblTempSalon, (sTempSal).c_str());
-      lv_label_set_text(ui_LblHeureMin, (sExtMinTimeStp).c_str());
-      lv_label_set_text(ui_LblHeureMax, (sExtMaxTimeStp).c_str());
+      lv_label_set_text(ui_LblHeureMin, sExtMinTimeStp);
+      lv_label_set_text(ui_LblHeureMax, sExtMaxTimeStp);
 
       lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
       lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
@@ -307,6 +307,7 @@ float fnMax(float fInput) { /* function fnMax */
   static float fMaxValue = fInput;
 
   if (fInput > fMaxValue || sClockHHMM == "00:00" ) { 
+
     fMaxValue = fInput;
     sExtMaxTimeStp = sClockHHMM;
   }
