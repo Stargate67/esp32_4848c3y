@@ -167,6 +167,7 @@ void DisplayAlarms(const uint16_t MBAlarm){
             }
 
             lv_label_set_text(AlarmLabel, sMessage.c_str());
+
             MemoHMBAlarme = MBAlarm;
         }
         if (bAcquitAlarme){

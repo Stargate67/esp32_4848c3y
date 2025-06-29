@@ -22,9 +22,9 @@ IPAddress dns(192, 168, 0, 254);  //DNS
 WiFiClient client;
 
 //char *sClockHHMMSS;
-char *sClockHHMM;
-char *sDateDDMMYYYY;
-char *sShortDateDDMM;
+char sClockHHMM[15];
+char sDateDDMMYYYY[15];
+char sShortDateDDMM[15];
 
 lv_obj_t *IPLabel;
 lv_obj_t *AlarmLabel;
@@ -190,8 +190,9 @@ void loop() {
     AcquitMesAlarme();
     
     if (WiFi.status() == WL_CONNECTED) {
-      // Affichage top left corner Déroulement étapes Modbus et ad. IP
-      lv_label_set_text_fmt(IPLabel, LV_SYMBOL_WIFI".%d.%d\ni:%02d", LocalIP[2], LocalIP[3], iState);
+      // Affichage top left corner adresse IP et Déroulement étapes Modbus
+      //lv_label_set_text_fmt(IPLabel, LV_SYMBOL_WIFI".%d.%d\ni:%02d", LocalIP[2], LocalIP[3], iState);
+      lv_label_set_text_fmt(IPLabel, ".%d.%d\ni:%02d", LocalIP[2], LocalIP[3], iState);
 
       if (!getLocalTime(&timeinfo)) {
         lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
@@ -200,12 +201,10 @@ void loop() {
 
       // Display clock
       lv_label_set_text_fmt(ClockLabel, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-      //sprintf(sClockHHMMSS, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
       sprintf(sClockHHMM, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
       // Display Date 
       if (timeinfo.tm_mday != TmpDay) {
-        //printLocalTime();
         sprintf(sDateDDMMYYYY, "%02d/%02d/%04d", timeinfo.tm_mday, timeinfo.tm_mon+1, timeinfo.tm_year+1900);
         sprintf(sShortDateDDMM, "%02d/%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
 

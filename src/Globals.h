@@ -63,9 +63,9 @@ extern int iState;
 extern ModbusIP mb;  //ModbusIP object
 
 //extern char *sClockHHMMSS;
-extern char *sClockHHMM;
-extern char *sDateDDMMYYYY;
-extern char *sShortDateDDMM;
+extern char sClockHHMM[15];
+extern char sDateDDMMYYYY[15];
+extern char sShortDateDDMM[15];
 
 extern const int iAvgMaxFifo;
 extern float fAvgFiFo[];
