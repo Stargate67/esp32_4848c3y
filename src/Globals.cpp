@@ -109,72 +109,76 @@ void DisplayAlarms(const uint16_t MBAlarm){
         ,'10 Temp. Ext < Temp. Salon'
     */
 
-    if ( MBAlarm ) {
-        if ( MBAlarm != MemoHMBAlarme) { // Une alarme se rajoute
-            //String sPrefix = "\n/!\\ " + sClockHHMM + " "; // A activer pour scroll verticale
-            String sPrefix = "# " + String(sClockHHMM) + " ";
+    if ( MBAlarm != MemoHMBAlarme) { // Une alarme se rajoute
 
-            memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
+        static u_int32_t Cptr=0;
+        Cptr++;
 
-            sMessage = "";
-            if (memoXorAlarm & 0b1) { // Bit0
-                sMessage = (sMessage + sPrefix + "0 ALARME CHAUDIERE ");
-            }
-            if (memoXorAlarm & 0b10) { // Bit1
-                sMessage = (sMessage + sPrefix + "1 PROBLEME REGULATION PLANCHER ");
-            }
-            if (memoXorAlarm & 0b100) { // Bit2
-                sMessage = (sMessage + sPrefix + "2 PORTE DE GARAGE 1 OUVERTE ");
-            }
-            if (memoXorAlarm & 0b1000) { // Bit3
-                sMessage = (sMessage + sPrefix + "3 DEFAUT PRESSION EAU CHAUFFAGE ");
-            }
-            if (memoXorAlarm & 0b10000) { // Bit4
-                sMessage = (sMessage + sPrefix + "4 TEST MESSAGE ");
-            }
-            if (memoXorAlarm & 0b100000) { // Bit5
-                sMessage = (sMessage + sPrefix + "5 ALARME ModbusTcp ");
-            }
-            if (memoXorAlarm & 0b1000000) { // Bit6
-                sMessage = (sMessage + sPrefix + "6 ALARME ModbusRtu ");
-            }
-            if (memoXorAlarm & 0b10000000) { // Bit7
-                sMessage = (sMessage + sPrefix + "7 Courant > 4A ");
-            }
-            if (memoXorAlarm & 0b100000000) { // Bit8
-                sMessage = (sMessage + sPrefix + "8 Fuite d eau probable ");
-            }
-            if (memoXorAlarm & 0b1000000000) { // Bit9
-                sMessage = (sMessage + sPrefix + "9 Temp. Ext > Temp. Fermer les volets! ");
-            }
-            if (memoXorAlarm & 0b10000000000) { // Bit10
-                sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenetres! ");
-            }
-            if (memoXorAlarm & 0b100000000000) { // Bit11
-                sMessage = (sMessage + sPrefix + "Alarme Bit 11 ");
-            }
-            if (memoXorAlarm & 0b1000000000000) { // Bit12
-                sMessage = (sMessage + sPrefix + "Alarme Bit 12 ");
-            }
-            if (memoXorAlarm & 0b10000000000000) { // Bit13
-                sMessage = (sMessage + sPrefix + "Alarme Bit 13 ");
-            }
-            if (memoXorAlarm & 0b100000000000000) { // Bit14
-                sMessage = (sMessage + sPrefix + "Alarme Bit 14 ");
-            }
-            if (memoXorAlarm & 0b1000000000000000) { // Bit15
-                sMessage = (sMessage + sPrefix + "Alarme Bit 15 ");
-            }
+        //String sPrefix = "\n/!\\ " + sClockHHMM + " "; // A activer pour scroll verticale
+        String sPrefix = "#" + String(sClockHHMM) + " " + String(Cptr) + " ";
 
-            lv_label_set_text(AlarmLabel, sMessage.c_str());
+    //  memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
+        memoXorAlarm = MBAlarm; //Detection nouvelle alarme
 
-            MemoHMBAlarme = MBAlarm;
+        sMessage = "";
+        if (memoXorAlarm & 0b1) { // Bit0
+            sMessage = (sMessage + sPrefix + "0 ALARME CHAUDIERE ");
         }
-        if (bAcquitAlarme){
-            memoXorAlarm = 0;
-            MemoHMBAlarme = 0;
-            sMessage = "";
+        if (memoXorAlarm & 0b10) { // Bit1
+            sMessage = (sMessage + sPrefix + "1 PROBLEME REGULATION PLANCHER ");
         }
+        if (memoXorAlarm & 0b100) { // Bit2
+            sMessage = (sMessage + sPrefix + "2 PORTE DE GARAGE 1 OUVERTE ");
+        }
+        if (memoXorAlarm & 0b1000) { // Bit3
+            sMessage = (sMessage + sPrefix + "3 DEFAUT PRESSION EAU CHAUFFAGE ");
+        }
+        if (memoXorAlarm & 0b10000) { // Bit4
+            sMessage = (sMessage + sPrefix + "4 TEST MESSAGE ");
+        }
+        if (memoXorAlarm & 0b100000) { // Bit5
+            sMessage = (sMessage + sPrefix + "5 ALARME ModbusTcp ");
+        }
+        if (memoXorAlarm & 0b1000000) { // Bit6
+            sMessage = (sMessage + sPrefix + "6 ALARME ModbusRtu ");
+        }
+        if (memoXorAlarm & 0b10000000) { // Bit7
+            sMessage = (sMessage + sPrefix + "7 Courant > 4A ");
+        }
+        if (memoXorAlarm & 0b100000000) { // Bit8
+            sMessage = (sMessage + sPrefix + "8 Fuite d eau probable ");
+        }
+        if (memoXorAlarm & 0b1000000000) { // Bit9
+            sMessage = (sMessage + sPrefix + "9 Temp. Ext > Temp. Fermer les volets! ");
+        }
+        if (memoXorAlarm & 0b10000000000) { // Bit10
+            sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenetres! ");
+        }
+        if (memoXorAlarm & 0b100000000000) { // Bit11
+            sMessage = (sMessage + sPrefix + "Alarme Bit 11 ");
+        }
+        if (memoXorAlarm & 0b1000000000000) { // Bit12
+            sMessage = (sMessage + sPrefix + "Alarme Bit 12 ");
+        }
+        if (memoXorAlarm & 0b10000000000000) { // Bit13
+            sMessage = (sMessage + sPrefix + "Alarme Bit 13 ");
+        }
+        if (memoXorAlarm & 0b100000000000000) { // Bit14
+            sMessage = (sMessage + sPrefix + "Alarme Bit 14 ");
+        }
+        if (memoXorAlarm & 0b1000000000000000) { // Bit15
+            sMessage = (sMessage + sPrefix + "Alarme Bit 15 ");
+        }
+
+        lv_label_set_text(AlarmLabel, sMessage.c_str());
+
+        MemoHMBAlarme = MBAlarm;
+    }
+
+    if (bAcquitAlarme){
+        memoXorAlarm = 0;
+        MemoHMBAlarme = 0;
+        sMessage = "";
     }
 }
 
