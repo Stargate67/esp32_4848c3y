@@ -117,6 +117,19 @@ void MainModbus() {
       float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
       //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
       String sTempExt = String(rTempExt, 2) + " °C";
+
+      String sTempExtMin = String(MBresultANA1[30]/10.0, 1) + " °C";
+      // Transforme un entier ex:1236 en heure '12:36'
+      char cBuffer[10];
+      sprintf(cBuffer, "%04d", MBresultANA1[31]);
+      String sBuffer = String(cBuffer);
+      String sTempExtTimeMin = sBuffer.substring(0, 2) + ":" + sBuffer.substring(2);
+
+      String sTempExtMax = String(MBresultANA1[32]/10.0, 1) + " °C";
+      sprintf(cBuffer, "%04d", MBresultANA1[33]);
+      sBuffer = String(cBuffer);
+      String sTempExtTimeMax = sBuffer.substring(0, 2) + ":" + sBuffer.substring(2);
+
       // Calcul la moyenne 
       float rAvgTempExt = fnAverage(rTempExt);
 
@@ -167,11 +180,15 @@ void MainModbus() {
 
       lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
       lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
-      lv_label_set_text(ui_LblTempMin, (String(fnMin(rTempExt)) + " °C").c_str());
-      lv_label_set_text(ui_LblTempMax, (String(fnMax(rTempExt)) + " °C").c_str());
-      lv_label_set_text(ui_LblTempSalon, (sTempSal).c_str());
-      lv_label_set_text(ui_LblHeureMin, sExtMinTimeStp);
-      lv_label_set_text(ui_LblHeureMax, sExtMaxTimeStp);
+
+      //lv_label_set_text(ui_LblTempMin, (String(fnMin(rTempExt)) + " °C").c_str());
+      lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
+      //lv_label_set_text(ui_LblTempMax, (String(fnMax(rTempExt)) + " °C").c_str());
+      lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
+      lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
+
+      lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
+      lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
 
       lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
       lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
