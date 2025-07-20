@@ -1,0 +1,38 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp",
+			"regex": "cpp",
+			"my_modbus.h": "c",
+			"modbusip_esp8266.h": "c",
+			"mainscreen.h": "c",
+			"modbustcp.h": "c",
+			"wifi.h": "c",
+			"globals.h": "c",
+			"arduino.h": "c",
+			"esp32_smartdisplay.h": "c",
+			"*.tcc": "cpp",
+			"fstream": "cpp",
+			"iosfwd": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"sstream": "cpp",
+			"streambuf": "cpp",
+			"cmath": "cpp",
+			"random": "cpp"
+		}
+	}
+}
