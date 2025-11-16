@@ -133,7 +133,7 @@ void MainModbus() {
       // Calcul la moyenne 
       float rAvgTempExt = fnAverage(rTempExt);
 
-      String sTempSal = "Sal:  " + String(MBresultANA1[0]/10.0, 2) + " °C";
+      String sTempSal = "Sal: " + String(MBresultANA1[0]/10.0, 2) + " °C";
 
       // Container Val ANA1 
       String sTempPlancher = String(MBresultANA1[1]/10.0, 1) + " °C";
@@ -181,10 +181,14 @@ void MainModbus() {
       lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
       lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
 
-      //lv_label_set_text(ui_LblTempMin, (String(fnMin(rTempExt)) + " °C").c_str());
+      //Temp exterieure Mini
       lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
-      //lv_label_set_text(ui_LblTempMax, (String(fnMax(rTempExt)) + " °C").c_str());
+      //Temp exterieure Maxi
       lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
+
+      // Affiche la moyenne exterieure a la place du salon pour essai
+      //sTempSal = "Avg: " + String(rAvgTempExt, 4);
+
       lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
 
       lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
