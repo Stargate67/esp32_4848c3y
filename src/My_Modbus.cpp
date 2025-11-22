@@ -118,14 +118,14 @@ void MainModbus() {
       //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
       String sTempExt = String(rTempExt, 2) + " °C";
 
-      String sTempExtMin = String(MBresultANA1[30]/10.0, 1) + " °C";
+      String sTempExtMin = String(((MBresultANA1[30] * 100.0 / 32764.0)-50.0), 1) + " °C";
       // Transforme un entier ex:1236 en heure '12:36'
       char cBuffer[10];
       sprintf(cBuffer, "%04d", MBresultANA1[31]);
       String sBuffer = String(cBuffer);
       String sTempExtTimeMin = sBuffer.substring(0, 2) + ":" + sBuffer.substring(2);
 
-      String sTempExtMax = String(MBresultANA1[32]/10.0, 1) + " °C";
+      String sTempExtMax = String(((MBresultANA1[32] * 100.0 / 32764.0)-50.0), 1) + " °C";
       sprintf(cBuffer, "%04d", MBresultANA1[33]);
       sBuffer = String(cBuffer);
       String sTempExtTimeMax = sBuffer.substring(0, 2) + ":" + sBuffer.substring(2);
