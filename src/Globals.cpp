@@ -114,7 +114,9 @@ void DisplayAlarms(const uint16_t MBAlarm){
             //String sPrefix = "\n/!\\ " + sClockHHMM + " "; // A activer pour scroll verticale
             String sPrefix = "# " + String(sClockHHMM) + " ";
 
-            memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
+            //memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
+            
+            memoXorAlarm = MBAlarm ; //Detection nouvelle alarme SANS acquitement !!
 
             sMessage = "";
             if (memoXorAlarm & 0b1) { // Bit0

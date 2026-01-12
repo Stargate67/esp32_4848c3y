@@ -95,7 +95,7 @@ void MainModbus() {
       mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
       //prevmillis1 = millis();
-      iState = 10;
+      iState = 20;
       if (SERDEBUG) Serial.println("iState="+String(iState));
     } 
     break;
@@ -156,7 +156,7 @@ void MainModbus() {
         lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
       }
 
-      // Changement de couleur de la Temp Ext. selon seuils
+      // Changement de couleur de la Température Exterieure selon seuils
       lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
       if (rTempExt > 25.0) {
         lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -204,7 +204,12 @@ void MainModbus() {
       if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
         bBoostChaud = 1;
         bCdeRelaisR2 = 1;
-        lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 255, 130, 0 ), 0 );
+        //Animation bouton Boost sur passage d'eau
+        if (sDebitRadiat.toFloat() > 0.1) {
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 210, 16, 52 ), 0 );
+          }else {
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 255, 130, 0 ), 0 );
+        }
       } else {
         bBoostChaud = 0;
         bCdeRelaisR2 = 0;
@@ -309,7 +314,7 @@ float fnMax(float fInput) { /* function fnMax */
   //Perform Max Value 
   static float fMaxValue = fInput;
 
-  if (fInput > fMaxValue || (strcmp(sClockHHMM, sClock0000)==0)) { 
+  if (fInput > fMaxValue || (strcmp(sClockHHMM, sClock0000)==0) || (strcmp(sExtMaxTimeStp, "NA:NA")==0)) { 
 
     fMaxValue = fInput;
     sExtMaxTimeStp = sClockHHMM;
@@ -318,10 +323,10 @@ float fnMax(float fInput) { /* function fnMax */
 }
 
 float fnMin(float fInput) { /* function fnMax */
-  //Perform Max Value 
+  //Perform Min Value 
   static float fMinValue = fInput;
 
-  if (fInput < fMinValue || (strcmp(sClockHHMM, sClock0000)==0)) { 
+  if (fInput < fMinValue || (strcmp(sClockHHMM, sClock0000)==0) || (strcmp(sExtMinTimeStp, "NA:NA")==0)) { 
     fMinValue = fInput;
     sExtMinTimeStp = sClockHHMM;
   }
