@@ -228,7 +228,7 @@ void MainModbus() {
         //Animation bouton Boost sur passage d'eau
         if (sDebitRadiat.toFloat() > 0.1) {
           lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 210, 16, 52 ), 0 );
-          }else {
+        }else {
           lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 255, 130, 0 ), 0 );
         }
       } else {
@@ -331,28 +331,7 @@ void MainModbus() {
   }
 }
 
-float fnMax(float fInput) { /* function fnMax */
-  //Perform Max Value 
-  static float fMaxValue = fInput;
 
-  if (fInput > fMaxValue || (strcmp(sClockHHMM, sClock0000)==0) || (strcmp(sExtMaxTimeStp, "NA:NA")==0)) { 
-
-    fMaxValue = fInput;
-    sExtMaxTimeStp = sClockHHMM;
-  }
-  return fMaxValue;
-}
-
-float fnMin(float fInput) { /* function fnMax */
-  //Perform Min Value 
-  static float fMinValue = fInput;
-
-  if (fInput < fMinValue || (strcmp(sClockHHMM, sClock0000)==0) || (strcmp(sExtMinTimeStp, "NA:NA")==0)) { 
-    fMinValue = fInput;
-    sExtMinTimeStp = sClockHHMM;
-  }
-  return fMinValue;
-}
 
 float fnAverage(float fInput) { /* function fnAverage */
    
