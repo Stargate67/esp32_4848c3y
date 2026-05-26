@@ -85,6 +85,7 @@ extern bool bRelay_1;
 extern bool bRelay_2;
 extern bool bRelay_3;
 extern bool bRelay_4;
+extern bool bRelay_5;
 
 const IPAddress MBremote(77, 204, 15, 6);   // Address of Internet Box => 192.168.0.105 PLC WAGO
 
@@ -119,16 +120,16 @@ extern uint16_t mbWriteCoilAddress;
 
 constexpr uint16_t MB_READ_INTERVAL = 1000; 
 
-constexpr uint16_t START_REG = 12688;           // === Requete de Lectuer Modbus principale ===  Starting holding register %MW389
+constexpr uint16_t START_REG = 12688;           // === Requete de Lectuer Modbus principale ===  Starting holding register %MW399
 constexpr uint16_t NB_REGS = 40;                // Number of holding registers to read
 
 constexpr uint16_t START_REG_ANIM = 12745;      // === Requete de Lectuer Modbus ==== Retour etat pour animation pompes, ch. lampes, etc 
 constexpr uint16_t NB_REGS_ANIM = 6;            // Number of holding registers to read  y compris les Alarmes 12748,12749
 
 constexpr uint16_t MASK_CHAUD = 0x1;            // Bit 0
-constexpr uint16_t MASK_BOOST_ANIM = 0x4000;    // Bit 14  Pourretour etat BOOST
+constexpr uint16_t MASK_BOOST_ANIM = 0x4000;    // Bit 14  Pour retour etat BOOST
 constexpr uint16_t MASK_BOOST_MA = 0x10;        // Bit 5   Pour Commande Marche Arret
-
+constexpr uint16_t MASK_ARRIVEEAU = 0x80;      // Bit 7   Pour retour ouverte arrivée eau
 
 constexpr uint16_t MASK_PPERADIAT = 0x2;        // Bit 1
 constexpr uint16_t MASK_PPEPLANCHER = 0x4;      // Bit 2
@@ -137,16 +138,20 @@ constexpr uint16_t MASK_PPEPLANCHER = 0x4;      // Bit 2
 //constexpr uint16_t START_REG_BP_ARRET = 12744; // registre des cde Arret bit à bit
 
 constexpr uint16_t BP_MARCHE_CHAUD = 19568;     // %MX455.0  Bobine cde Marche
-constexpr uint16_t BP_ARRET_CHAUD = 19584;      // %MX457.0 Bobine cde Arret
+constexpr uint16_t BP_ARRET_CHAUD = 19584;      // %MX456.0 Bobine cde Arret
 
 constexpr uint16_t BP_MARCHE_BOOST = 19573;     // %MX455.5 Bobine cde Marche
-constexpr uint16_t BP_ARRET_BOOST = 19589;      // %MX457.5 Bobine cde Arret
+constexpr uint16_t BP_ARRET_BOOST = 19589;      // %MX456.5 Bobine cde Arret
+
+constexpr uint16_t BP_MARCHE_ARRIVEEAU = 19574;     // %MX455.6 Bobine cde Marche
+constexpr uint16_t BP_ARRET_ARRIVEEAU = 19590;      // %MX456.6 Bobine cde Arret
+
 
 constexpr uint16_t BP_MARCHE_RADIAT = 19569;    // %MX455.1  Bobine cde Marche
-constexpr uint16_t BP_ARRET_RADIAT = 19585;     // %MX457.1 Bobine cde Arret
+constexpr uint16_t BP_ARRET_RADIAT = 19585;     // %MX456.1 Bobine cde Arret
 
 constexpr uint16_t BP_MARCHE_PLANCHER = 19570;  // %MX455.2 Bobine cde Marche
-constexpr uint16_t BP_ARRET_PLANCHER = 19586;   // %MX457.2 Bobine cde Arret
+constexpr uint16_t BP_ARRET_PLANCHER = 19586;   // %MX456.2 Bobine cde Arret
 
 constexpr uint16_t BP_LAMPE_SSOL = 19488;       // BP Marche lampe sous sol
 constexpr uint16_t BP_LAMPE_RDC = 19489;        // BP Marche lampe RdC

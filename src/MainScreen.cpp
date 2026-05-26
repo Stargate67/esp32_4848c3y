@@ -130,18 +130,15 @@ static void my_event_cb_ArriveeEau (lv_event_t *e){
         if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
 
         if (bRelay_5) {
-            mbWriteCoilAddress = BP_ARRET_PLANCHER;
+            mbWriteCoilAddress = BP_ARRET_ARRIVEEAU;
             bRelay_5 = 0;
         } else {
-            mbWriteCoilAddress = BP_MARCHE_PLANCHER;
+            mbWriteCoilAddress = BP_MARCHE_ARRIVEEAU;
             bRelay_5 = 1;
         }
-        if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_5);
+        if (BP_DEBUG) Serial.println("BP ARRIVEE EAU: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_5);
     }
 }
-
-
-
 
 static void my_event_cb_AcqAlarmes (lv_event_t *e){
 
@@ -417,14 +414,15 @@ void lv_createButton_PLANCHER(lv_obj_t *parent){
 void lv_createButton_ArriveeEau(lv_obj_t *parent){
     btnArriveeEau = lv_btn_create(parent);
     lv_obj_set_size(btnArriveeEau, 120, 110);                 // Définir la taille du bouton
-    lv_obj_align(btnArriveeEau, LV_ALIGN_TOP_LEFT, 360, 240);
-    lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
+    lv_obj_align(btnArriveeEau, LV_ALIGN_TOP_LEFT, 360, 250);
+    //lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
+    //lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
+    //lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 120, 120, 120 ), 0 );
 
     lblBtnArriveeEau = lv_label_create(btnArriveeEau);
-    lv_label_set_text(lblBtnArriveeEau, "Arrivee Eau");
+    lv_label_set_text(lblBtnArriveeEau, "Arrivee\nEau");
+    lv_obj_set_style_text_align(lblBtnArriveeEau, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_center(lblBtnArriveeEau);
 
     lv_obj_add_event_cb(btnArriveeEau, my_event_cb_ArriveeEau, LV_EVENT_RELEASED, NULL);

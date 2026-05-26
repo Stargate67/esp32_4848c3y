@@ -62,6 +62,7 @@ bool bChaudiere;    // Modbus Etat Marche Chaudière
 bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
 bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
+bool bArriveeEau;   // Modbus Etat Marche arrivée eau
 
 void MainModbus() {
   //mb.task();
@@ -257,6 +258,16 @@ void MainModbus() {
         lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
       }
       
+      if (MBresultANIM1[0] & MASK_ARRIVEEAU) {
+        bArriveeEau = 1;
+        bRelay_5 = 1;
+        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 0, 100, 0 ), 0 );
+      } else {
+        bArriveeEau = 0;
+        bRelay_5 = 0;
+        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 130, 130, 130 ), 0 );
+      }
+
       // Traitement Affichage des alarmes.
       DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
 
@@ -330,8 +341,6 @@ void MainModbus() {
     break;
   }
 }
-
-
 
 float fnAverage(float fInput) { /* function fnAverage */
    
