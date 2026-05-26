@@ -23,7 +23,7 @@ WiFiClient client;
 
 //char *sClockHHMMSS;
 char sClockHHMM[15];
-char sDateDDMMYYYY[15];
+char sDateDDMMYYYY[16];
 char sShortDateDDMM[15];
 
 lv_obj_t *IPLabel;
@@ -69,7 +69,7 @@ void initTime(String timezone){
   struct tm timeinfo;
 
   if (SERDEBUG) Serial.println("Setting up time");
-  configTime(0, 0, "pool.ntp.org");    // First connect to NTP server, with 0 TZ offset
+  configTime(0, 0, "fr.pool.ntp.org", "ntp.univ-rennes2.fr", "time.windows.com");    // First connect to NTP server, with 0 TZ offset
   if (!getLocalTime(&timeinfo)) {
     if (SERDEBUG) Serial.println(" Failed to obtain time");
     return;
@@ -201,13 +201,13 @@ void loop() {
 
       // Display clock
       lv_label_set_text_fmt(ClockLabel, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-      sprintf(sClockHHMM, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      strftime(sClockHHMM, sizeof(sClockHHMM), "%H:%M", &timeinfo);
 
       // Display Date 
       if (timeinfo.tm_mday != TmpDay) {
-        sprintf(sDateDDMMYYYY, "%02d/%02d/%04d", timeinfo.tm_mday, timeinfo.tm_mon+1, timeinfo.tm_year+1900);
-        sprintf(sShortDateDDMM, "%02d/%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
-
+        strftime(sDateDDMMYYYY, sizeof(sDateDDMMYYYY), "%d/%m/%Y", &timeinfo);
+        strftime(sShortDateDDMM, sizeof(sShortDateDDMM), "%d/%m", &timeinfo);
+        
         if (SERDEBUG) Serial.println("Date: " + String(sDateDDMMYYYY));
         TmpDay = timeinfo.tm_mday;
       }
@@ -235,4 +235,3 @@ void loop() {
     TimerCheckWifi.Reset();
   }
 }
-
