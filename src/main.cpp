@@ -224,7 +224,7 @@ void loop() {
       //Serial.print(millis());
       //Serial.println("Reconnecting to WiFi...");
       String sPrefix = "# " + String(sClockHHMM) + " ";
-      String sMessage = sPrefix + "Plus de WIFI Stargate. Reconnexion en cours.";
+      String sMessage = sPrefix + "Pas de WIFI Stargate. En attente de reconnexion.";
       lv_label_set_text(AlarmLabel, sMessage.c_str());
       delay(100);
       UpdateTickers();
