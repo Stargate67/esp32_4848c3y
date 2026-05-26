@@ -3,6 +3,7 @@
 #include "MainScreen2.h"
 
 bool bRelay_4;
+bool bRelay_5;
 bool bAcquitAlarme;
 
 uint32_t compteur;
@@ -11,6 +12,7 @@ lv_obj_t *btnR1Chaudiere;
 lv_obj_t *btnR2BoostCh;
 lv_obj_t *btnR3PpeRadiateur;
 lv_obj_t *btnPpePlancher;
+lv_obj_t *btnArriveeEau;
 
 lv_obj_t *lblBtnR1Chaudiere;
 lv_obj_t *lblBtnR1small;
@@ -22,6 +24,7 @@ lv_obj_t *lblBtnR3PpeRadiateur;
 lv_obj_t *lblBtnR3small;
 
 lv_obj_t *lblBtnPpePlancher;
+lv_obj_t *lblBtnArriveeEau;
 
 lv_obj_t * ui_Container1;
 lv_obj_t * ui_Container2;
@@ -117,6 +120,28 @@ static void my_event_cb_PpePlancher (lv_event_t *e){
         if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_4);
     }
 }
+
+static void my_event_cb_ArriveeEau (lv_event_t *e){
+
+    lv_event_code_t code = lv_event_get_code(e);
+
+    if (code == LV_EVENT_RELEASED) {
+        compteur++;
+        if (BP_DEBUG) Serial.println("compteur=" + String(compteur));
+
+        if (bRelay_5) {
+            mbWriteCoilAddress = BP_ARRET_PLANCHER;
+            bRelay_5 = 0;
+        } else {
+            mbWriteCoilAddress = BP_MARCHE_PLANCHER;
+            bRelay_5 = 1;
+        }
+        if (BP_DEBUG) Serial.println("BP PLANCHER: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_5);
+    }
+}
+
+
+
 
 static void my_event_cb_AcqAlarmes (lv_event_t *e){
 
@@ -380,13 +405,29 @@ void lv_createButton_PLANCHER(lv_obj_t *parent){
     lv_obj_set_style_bg_color(btnPpePlancher, Btn_grad_colors[0], 0);
     lv_obj_set_style_bg_grad_color(btnPpePlancher, Btn_grad_colors[1], 0);
     lv_obj_set_style_bg_grad_dir(btnPpePlancher, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
+    lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
 
     lblBtnPpePlancher = lv_label_create(btnPpePlancher);
     lv_label_set_text(lblBtnPpePlancher, "Plancher");
     lv_obj_center(lblBtnPpePlancher);
 
     lv_obj_add_event_cb(btnPpePlancher, my_event_cb_PpePlancher, LV_EVENT_RELEASED, NULL);
+}
+
+void lv_createButton_ArriveeEau(lv_obj_t *parent){
+    btnArriveeEau = lv_btn_create(parent);
+    lv_obj_set_size(btnArriveeEau, 120, 110);                 // Définir la taille du bouton
+    lv_obj_align(btnArriveeEau, LV_ALIGN_TOP_LEFT, 360, 240);
+    lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
+    lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
+    lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
+    lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 120, 120, 120 ), 0 );
+
+    lblBtnArriveeEau = lv_label_create(btnArriveeEau);
+    lv_label_set_text(lblBtnArriveeEau, "Arrivee Eau");
+    lv_obj_center(lblBtnArriveeEau);
+
+    lv_obj_add_event_cb(btnArriveeEau, my_event_cb_ArriveeEau, LV_EVENT_RELEASED, NULL);
 }
 
 void lv_CreateIPLabel(lv_obj_t * parent)
@@ -450,4 +491,5 @@ void InitUI(){
   lv_createButton_BOOSTCh(ui_scr);
   lv_createButton_RADIAT(ui_scr);
   lv_createButton_PLANCHER(ui_scr);
+  lv_createButton_ArriveeEau(ui_scr);
 }

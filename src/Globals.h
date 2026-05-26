@@ -92,6 +92,7 @@ extern lv_obj_t *btnR1Chaudiere;
 extern lv_obj_t *btnR2BoostCh;
 extern lv_obj_t *btnR3PpeRadiateur;
 extern lv_obj_t *btnPpePlancher;
+extern lv_obj_t *btnArriveeEau;
 
 extern lv_obj_t *lblBtnR1Chaudiere;
 extern lv_obj_t *lblBtnR1small;
@@ -103,6 +104,7 @@ extern lv_obj_t *lblBtnR3PpeRadiateur;
 extern lv_obj_t *lblBtnR3small;
 
 extern lv_obj_t *lblBtnPpePlancher;
+extern lv_obj_t *lblBtnArriveeEau;
 
 extern lv_obj_t *lblScrolTxt_1;
 extern lv_obj_t *lblScrolTxt_2;
