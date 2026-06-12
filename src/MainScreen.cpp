@@ -415,9 +415,9 @@ void lv_createButton_ArriveeEau(lv_obj_t *parent){
     btnArriveeEau = lv_btn_create(parent);
     lv_obj_set_size(btnArriveeEau, 120, 110);                 // Définir la taille du bouton
     lv_obj_align(btnArriveeEau, LV_ALIGN_TOP_LEFT, 360, 250);
-    //lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
-    //lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
-    //lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
+    lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
+    lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
+    lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 120, 120, 120 ), 0 );
 
     lblBtnArriveeEau = lv_label_create(btnArriveeEau);

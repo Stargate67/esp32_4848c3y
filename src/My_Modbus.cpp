@@ -261,7 +261,7 @@ void MainModbus() {
       if (MBresultANIM1[0] & MASK_ARRIVEEAU) {
         bArriveeEau = 1;
         bRelay_5 = 1;
-        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 0, 100, 0 ), 0 );
+        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 40, 112, 226 ), 0 );
       } else {
         bArriveeEau = 0;
         bRelay_5 = 0;
