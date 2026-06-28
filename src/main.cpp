@@ -69,11 +69,12 @@ void initTime(String timezone){
   struct tm timeinfo;
 
   if (SERDEBUG) Serial.println("Setting up time");
-  configTime(0, 0, "fr.pool.ntp.org", "ntp.univ-rennes2.fr", "time.windows.com");    // First connect to NTP server, with 0 TZ offset
+  configTime(0, 0, "192.168.0.254", "fr.pool.ntp.org", "time.windows.com");    // First connect to NTP server, with 0 TZ offset
   if (!getLocalTime(&timeinfo)) {
     if (SERDEBUG) Serial.println(" Failed to obtain time");
     return;
   }
+
   if (SERDEBUG) Serial.println(" Got the time from NTP");
   // Now we can set the real timezone
   setTimezone(timezone);
@@ -196,20 +197,19 @@ void loop() {
 
       if (!getLocalTime(&timeinfo)) {
         lv_label_set_text(AlarmLabel, "Pas de synchro Horloge!");
-        return;
-      }
+      } else {
+        // Display clock
+        lv_label_set_text_fmt(ClockLabel, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        strftime(sClockHHMM, sizeof(sClockHHMM), "%H:%M", &timeinfo);
 
-      // Display clock
-      lv_label_set_text_fmt(ClockLabel, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-      strftime(sClockHHMM, sizeof(sClockHHMM), "%H:%M", &timeinfo);
-
-      // Display Date 
-      if (timeinfo.tm_mday != TmpDay) {
+        // Display Date 
+        if (timeinfo.tm_mday != TmpDay) {
         strftime(sDateDDMMYYYY, sizeof(sDateDDMMYYYY), "%d/%m/%Y", &timeinfo);
         strftime(sShortDateDDMM, sizeof(sShortDateDDMM), "%d/%m", &timeinfo);
         
         if (SERDEBUG) Serial.println("Date: " + String(sDateDDMMYYYY));
-        TmpDay = timeinfo.tm_mday;
+          TmpDay = timeinfo.tm_mday;
+        }
       }
     } else {
       // Si pas de connexion WIFI => Message plus complet top left corner
