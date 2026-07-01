@@ -87,7 +87,7 @@ extern bool bRelay_3;
 extern bool bRelay_4;
 extern bool bRelay_5;
 
-const IPAddress MBremote(77, 204, 15, 6);   // Address of Internet Box => 192.168.0.105 PLC WAGO
+const IPAddress MBremote(192, 168, 0, 105);   // Address of Internet Box => 192.168.0.105 PLC WAGO
 
 extern lv_obj_t *btnR1Chaudiere;
 extern lv_obj_t *btnR2BoostCh;

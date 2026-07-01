@@ -69,7 +69,7 @@ void initTime(String timezone){
   struct tm timeinfo;
 
   if (SERDEBUG) Serial.println("Setting up time");
-  configTime(0, 0, "192.168.0.254", "fr.pool.ntp.org", "time.windows.com");    // First connect to NTP server, with 0 TZ offset
+    configTime(0, 0, "fr.pool.ntp.org", "time.windows.com");    // First connect to NTP server, with 0 TZ offset
   if (!getLocalTime(&timeinfo)) {
     if (SERDEBUG) Serial.println(" Failed to obtain time");
     return;
