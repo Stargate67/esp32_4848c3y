@@ -22,9 +22,6 @@ const char *sExtMinTimeStp = "NA:NA";
 
 const char *sClock0000 = "00:00";
 
-//const int iAvgMaxFifo;
-//const int iAvgMaxFifo = 10;
-//float fAvgFiFo[iAvgMaxFifo];
 int iReadIndex;
 int iStartIndex;
 uint16_t MBresultANA1[NB_REGS];
@@ -64,6 +61,19 @@ bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
 bool bArriveeEau;   // Modbus Etat Marche arrivée eau
 
+// Applique l'etat anime d'un relais (bit de MBresultANIM1[0]) a son bool d'etat, sa commande et la couleur du bouton.
+static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn, lv_color_t colorOn, lv_color_t colorOff){
+  if (animReg & mask) {
+    stateFlag = 1;
+    cmdFlag = 1;
+    lv_obj_set_style_bg_color(btn, colorOn, 0);
+  } else {
+    stateFlag = 0;
+    cmdFlag = 0;
+    lv_obj_set_style_bg_color(btn, colorOff, 0);
+  }
+}
+
 void MainModbus() {
   //mb.task();
   switch (iState) {
@@ -87,15 +97,9 @@ void MainModbus() {
     case 5:
     { 
       // Read holding registers from Modbus Slave
-      //uint16_t MBTransactionANA1 = mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
-      //uint16_t MBTransactionANIM1 = mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
-
-      //uint16_t MBTransactionCL1 = mb.readCoil(MBremote, START_OUTPUT1, MBresultCL1, NB_OUTPUT1, nullptr, 1);
-
       mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
       mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
-      //prevmillis1 = millis();
       iState = 20;
       if (SERDEBUG) Serial.println("iState="+String(iState));
     } 
@@ -104,11 +108,8 @@ void MainModbus() {
     case 10:
     { //  ***********    Etape 10    **************
       // Wait for the transaction to complete
-      //if (millis() >= prevmillis1 + 50){ //Process MB client request each second
-        //prevmillis1 = millis();
-        iState = 20;
-        if (SERDEBUG) Serial.println("iState="+String(iState));
-      //}
+      iState = 20;
+      if (SERDEBUG) Serial.println("iState="+String(iState));
     }
     break;
 
@@ -213,15 +214,8 @@ void MainModbus() {
       lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
 
       // Traitement animation des BPs sur retour MBus
-      if (MBresultANIM1[0] & MASK_CHAUD) {
-        bChaudiere=1;
-        bCdeRelaisR1=1;
-        lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 0, 160, 60 ), 0 );
-      } else {
-        bChaudiere=0;
-        bCdeRelaisR1=0;
-        lv_obj_set_style_bg_color(btnR1Chaudiere, lv_color_make( 100, 100, 100 ), 0 );
-      }
+      updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ));
 
       if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
         bBoostChaud = 1;
@@ -238,35 +232,14 @@ void MainModbus() {
         lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
       }
 
-      if (MBresultANIM1[0] & MASK_PPERADIAT) {
-        bPpeRadiat = 1;
-        bCdeRelaisR3 = 1;
-        lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 0, 160, 60 ), 0 );
-      } else {
-        bPpeRadiat = 0;
-        bCdeRelaisR3 = 0;
-        lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 120, 120, 120 ), 0 );
-      }
-      
-      if (MBresultANIM1[0] & MASK_PPEPLANCHER) {
-        bPpePlancher = 1;
-        bRelay_4 = 1;
-        lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 0, 160, 60 ), 0 );
-      } else {
-        bPpePlancher = 0;
-        bRelay_4 = 0;
-        lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 130, 130, 130 ), 0 );
-      }
-      
-      if (MBresultANIM1[0] & MASK_ARRIVEEAU) {
-        bArriveeEau = 1;
-        bRelay_5 = 1;
-        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 40, 112, 226 ), 0 );
-      } else {
-        bArriveeEau = 0;
-        bRelay_5 = 0;
-        lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 130, 130, 130 ), 0 );
-      }
+      updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ));
+
+      updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ));
+
+      updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
+                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ));
 
       // Traitement Affichage des alarmes.
       DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748

@@ -3,8 +3,6 @@
 #include "time.h"
 #include "My_Modbus.h"
 #include "Globals.h"
-#include "MainScreen.h"
-#include "MainScreen2.h"
 
 void UpdateTickers(void);
 

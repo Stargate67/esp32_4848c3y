@@ -19,7 +19,9 @@ class Tempos{
 
 
 // SCREEN: scr
+void InitUI(void);
 void ui_Screen1_screen_init(void);
+void ui_Screen1_screen_init_1(lv_obj_t *parent);
 //extern lv_obj_t * ui_Screen1;
 extern lv_obj_t * ui_Container1;
 extern lv_obj_t * ui_LblTempExt;

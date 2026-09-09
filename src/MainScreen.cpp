@@ -1,6 +1,4 @@
 #include "Globals.h"
-#include "MainScreen.h"
-#include "MainScreen2.h"
 
 bool bRelay_4;
 bool bRelay_5;
@@ -307,104 +305,57 @@ void ui_Screen1_screen_init(lv_obj_t *parent)
 
 }
 
+// Cree un bouton relais avec son degrade standard, son etiquette de titre centree et son event cb.
+static lv_obj_t* createRelayButtonBase(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h,
+                                        const char *text, lv_obj_t **outLabel, lv_event_cb_t eventCb){
+    lv_obj_t *btn = lv_btn_create(parent);
+    lv_obj_set_size(btn, w, h);
+    lv_obj_align(btn, LV_ALIGN_TOP_LEFT, x, y);
+    lv_obj_set_style_bg_color(btn, Btn_grad_colors[0], 0);
+    lv_obj_set_style_bg_grad_color(btn, Btn_grad_colors[1], 0);
+    lv_obj_set_style_bg_grad_dir(btn, LV_GRAD_DIR_VER, 0);
+
+    *outLabel = lv_label_create(btn);
+    lv_label_set_text(*outLabel, text);
+    lv_obj_center(*outLabel);
+
+    lv_obj_add_event_cb(btn, eventCb, LV_EVENT_RELEASED, NULL);
+    return btn;
+}
+
+// Ajoute la petite etiquette d'etat "Rx=0/1" en bas a gauche d'un bouton relais.
+static lv_obj_t* createRelaySmallLabel(lv_obj_t *btn, const char *text){
+    lv_obj_t *lbl = lv_label_create(btn);
+    lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
+    lv_obj_align(lbl, LV_ALIGN_BOTTOM_LEFT, 3, 3);
+    lv_label_set_text(lbl, text);
+    return lbl;
+}
+
 void lv_createButton_CHAUD(lv_obj_t *parent){
-    btnR1Chaudiere = lv_btn_create(parent);    // Créer un bouton
-    lv_obj_set_size(btnR1Chaudiere, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnR1Chaudiere, LV_ALIGN_TOP_LEFT, 0, 360);      // Centrer le bouton
-    lv_obj_set_style_bg_color(btnR1Chaudiere, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR1Chaudiere, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR1Chaudiere, LV_GRAD_DIR_VER, 0);
-
-    // Ajouter une étiquette au bouton
-    lblBtnR1Chaudiere = lv_label_create(btnR1Chaudiere);
-    lv_obj_align(lblBtnR1Chaudiere, LV_ALIGN_TOP_MID, 3, 10); 
-    lv_label_set_text(lblBtnR1Chaudiere, "Chaud");
-    lv_obj_center(lblBtnR1Chaudiere);
-
-    // Ajouter une petite étiquette au bouton
-    lblBtnR1small= lv_label_create(btnR1Chaudiere);
-    lv_obj_set_style_text_font(lblBtnR1small, &lv_font_montserrat_12, 0);
-    lv_obj_align(lblBtnR1small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
-    lv_label_set_text(lblBtnR1small, "R1=0");
-
-    // Ajouter une action au bouton
-    lv_obj_add_event_cb(btnR1Chaudiere, my_event_cb_R1Chaudiere, LV_EVENT_RELEASED, NULL);
+    btnR1Chaudiere = createRelayButtonBase(parent, 0, 360, 120, 120, "Chaud", &lblBtnR1Chaudiere, my_event_cb_R1Chaudiere);
+    lblBtnR1small = createRelaySmallLabel(btnR1Chaudiere, "R1=0");
 }
 
 void lv_createButton_BOOSTCh(lv_obj_t *parent){
-    btnR2BoostCh = lv_btn_create(parent);
-    lv_obj_set_size(btnR2BoostCh, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnR2BoostCh, LV_ALIGN_TOP_LEFT, 120, 360);
-    lv_obj_set_style_bg_color(btnR2BoostCh, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR2BoostCh, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR2BoostCh, LV_GRAD_DIR_VER, 0);
-
-    lblBtnR2BoostCh = lv_label_create(btnR2BoostCh);
-    lv_label_set_text(lblBtnR2BoostCh, "Boost");
-    lv_obj_center(lblBtnR2BoostCh);
-
-   // Ajouter une petite étiquette au bouton
-    lblBtnR2small= lv_label_create(btnR2BoostCh);
-    lv_obj_set_style_text_font(lblBtnR2small, &lv_font_montserrat_12, 0);
-    lv_obj_align(lblBtnR2small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
-    lv_label_set_text(lblBtnR2small, "R2=0");    
-    
-    lv_obj_add_event_cb(btnR2BoostCh, my_event_cb_R2BoostCh, LV_EVENT_RELEASED, NULL);
+    btnR2BoostCh = createRelayButtonBase(parent, 120, 360, 120, 120, "Boost", &lblBtnR2BoostCh, my_event_cb_R2BoostCh);
+    lblBtnR2small = createRelaySmallLabel(btnR2BoostCh, "R2=0");
 }
 
 void lv_createButton_RADIAT(lv_obj_t *parent){
-    btnR3PpeRadiateur = lv_btn_create(parent);
-    lv_obj_set_size(btnR3PpeRadiateur, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnR3PpeRadiateur, LV_ALIGN_TOP_LEFT, 240, 360);
-    lv_obj_set_style_bg_color(btnR3PpeRadiateur, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnR3PpeRadiateur, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnR3PpeRadiateur, LV_GRAD_DIR_VER, 0);
-    //lv_obj_set_style_bg_color(btnR3PpeRadiateur, lv_color_make( 110, 110, 110 ), 0 );
-
-    lblBtnR3PpeRadiateur = lv_label_create(btnR3PpeRadiateur);
-    lv_label_set_text(lblBtnR3PpeRadiateur, "Radiat");
-    lv_obj_center(lblBtnR3PpeRadiateur);
-
-   // Ajouter une petite étiquette au bouton
-    lblBtnR3small= lv_label_create(btnR3PpeRadiateur);
-    lv_obj_set_style_text_font(lblBtnR3small, &lv_font_montserrat_12, 0);
-    lv_obj_align(lblBtnR3small, LV_ALIGN_BOTTOM_LEFT, 3, 3); 
-    lv_label_set_text(lblBtnR3small, "R3=0");    
-    
-    lv_obj_add_event_cb(btnR3PpeRadiateur, my_event_cb_R3PpeRadiateur, LV_EVENT_RELEASED, NULL);
+    btnR3PpeRadiateur = createRelayButtonBase(parent, 240, 360, 120, 120, "Radiat", &lblBtnR3PpeRadiateur, my_event_cb_R3PpeRadiateur);
+    lblBtnR3small = createRelaySmallLabel(btnR3PpeRadiateur, "R3=0");
 }
 
 void lv_createButton_PLANCHER(lv_obj_t *parent){
-    btnPpePlancher = lv_btn_create(parent);
-    lv_obj_set_size(btnPpePlancher, 120, 120);                 // Définir la taille du bouton
-    lv_obj_align(btnPpePlancher, LV_ALIGN_TOP_LEFT, 360, 360);
-    lv_obj_set_style_bg_color(btnPpePlancher, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnPpePlancher, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnPpePlancher, LV_GRAD_DIR_VER, 0);
+    btnPpePlancher = createRelayButtonBase(parent, 360, 360, 120, 120, "Plancher", &lblBtnPpePlancher, my_event_cb_PpePlancher);
     lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
-
-    lblBtnPpePlancher = lv_label_create(btnPpePlancher);
-    lv_label_set_text(lblBtnPpePlancher, "Plancher");
-    lv_obj_center(lblBtnPpePlancher);
-
-    lv_obj_add_event_cb(btnPpePlancher, my_event_cb_PpePlancher, LV_EVENT_RELEASED, NULL);
 }
 
 void lv_createButton_ArriveeEau(lv_obj_t *parent){
-    btnArriveeEau = lv_btn_create(parent);
-    lv_obj_set_size(btnArriveeEau, 120, 110);                 // Définir la taille du bouton
-    lv_obj_align(btnArriveeEau, LV_ALIGN_TOP_LEFT, 360, 250);
-    lv_obj_set_style_bg_color(btnArriveeEau, Btn_grad_colors[0], 0);
-    lv_obj_set_style_bg_grad_color(btnArriveeEau, Btn_grad_colors[1], 0);
-    lv_obj_set_style_bg_grad_dir(btnArriveeEau, LV_GRAD_DIR_VER, 0);
+    btnArriveeEau = createRelayButtonBase(parent, 360, 250, 120, 110, "Arrivee\nEau", &lblBtnArriveeEau, my_event_cb_ArriveeEau);
     lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 120, 120, 120 ), 0 );
-
-    lblBtnArriveeEau = lv_label_create(btnArriveeEau);
-    lv_label_set_text(lblBtnArriveeEau, "Arrivee\nEau");
     lv_obj_set_style_text_align(lblBtnArriveeEau, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_center(lblBtnArriveeEau);
-
-    lv_obj_add_event_cb(btnArriveeEau, my_event_cb_ArriveeEau, LV_EVENT_RELEASED, NULL);
 }
 
 void lv_CreateIPLabel(lv_obj_t * parent)
