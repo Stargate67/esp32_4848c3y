@@ -6,8 +6,6 @@
 #include "MainScreen.h"
 #include "MainScreen2.h"
 
-//#include <ModbusIP_ESP8266.h>
-
 void UpdateTickers(void);
 
 int TmpDay;
@@ -38,26 +36,8 @@ Tempos TimerCheckWifi(3000);
 IPAddress LocalIP;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-//                         FIN DES DECLARATIONS 
+//                         FIN DES DECLARATIONS
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-static uint8_t conv2d(const char* p) {
-  uint8_t v = 0;
-  if ('0' <= *p && *p <= '9')
-    v = *p - '0';
-  return 10 * v + *++p - '0';
-}
-*/
-
-void timeloop (int interval){ // the delay function
-  int timer;
-
-  unsigned long prevmillis = millis();
-  do {
-     timer = (millis() - prevmillis); 
-  } while(timer < interval); 
-}
 
 void setTimezone(String timezone){
   if (SERDEBUG) Serial.printf(" Setting Timezone to %s\n",timezone.c_str());
@@ -80,14 +60,6 @@ void initTime(String timezone){
   setTimezone(timezone);
 }
 
-void printLocalTime(){
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return;
-  }
-  if (SERDEBUG) Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
-}
-
 void startWifi(){
   WiFi.mode(WIFI_STA);
   WiFi.config(IP, gateway, subnet, dns);  
@@ -102,13 +74,10 @@ void startWifi(){
 
   Serial.print("Wifi RSSI=");
   Serial.println(WiFi.RSSI());
-  //long rssi = WiFi.RSSI();
   Serial.println("");
   Serial.println(WiFi.localIP());
-  //String sLocalIP = WiFi.localIP().toString();
   LocalIP = WiFi.localIP();
   lv_label_set_text_fmt(IPLabel, ".%d.%d\nWifi:%d", LocalIP[2], LocalIP[3], WiFi.status());
-  //(sLocalIP.substring( strlen(sLocalIP), -6)).c_str());
 }
 
 void setTime(int yr, int month, int mday, int hr, int minute, int sec, int isDst){
@@ -185,8 +154,6 @@ void loop() {
 
   // ========  Main Tasks à 100ms  =========== 
   if (TimerScan100ms.Q()){ // 100ms
-    String sMesAlarme = "";
-
     Relays();
     AcquitMesAlarme();
     

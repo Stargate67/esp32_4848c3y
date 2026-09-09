@@ -67,8 +67,6 @@ extern char sClockHHMM[15];
 extern char sDateDDMMYYYY[16];
 extern char sShortDateDDMM[15];
 
-extern const int iAvgMaxFifo;
-extern float fAvgFiFo[];
 extern int iReadIndex;
 extern int iStartIndex;
 

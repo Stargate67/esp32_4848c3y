@@ -43,45 +43,26 @@ Tempos TpoMesAcquite(2000);  // tempo pour Raz Message acquité
 
 uint16_t MemoHMBAlarme;
 
+// Applique la tempo Marche/Arret d'un relais: cmd=demande de marche, feedback=etat retourne par le PLC.
+static void applyRelayTiming(bool cmd, bool feedback, int pin, Tempos &onTimer, Tempos &offTimer){
+    if (cmd){
+        offTimer.Reset();
+        if (onTimer.Q() && !feedback) {
+            digitalWrite(pin, HIGH);
+        }
+    } else {
+        onTimer.Reset();
+        if (offTimer.Q() && feedback) {
+            digitalWrite(pin, LOW);
+        }
+    }
+}
+
 void Relays(){
 
-    if (bCdeRelaisR1){
-        Timer2.Reset();
-        if (Timer1.Q() && !bChaudiere) {
-            digitalWrite(RELAY_1, HIGH);
-        }
-    } else {
-        Timer1.Reset();
-        if (Timer2.Q() && bChaudiere) {
-            digitalWrite(RELAY_1, LOW);
-        }
-    }
-
-    if (bCdeRelaisR2){
-         Timer4.Reset();
-         //if (Timer3.Q(2000) && !bBoostChaud) {
-        if (Timer3.Q()) {
-            digitalWrite(RELAY_2, HIGH);
-        }
-    } else {
-         Timer3.Reset();
-        //if (Timer4.Q() && bBoostChaud) {
-        if (Timer4.Q()) {
-            digitalWrite(RELAY_2, LOW);
-        }
-    }
-
-    if (bCdeRelaisR3){
-        Timer6.Reset();
-        if (Timer5.Q() && !bPpeRadiat) {
-            digitalWrite(RELAY_3, HIGH);
-        }
-    } else {
-        Timer5.Reset();
-        if (Timer6.Q() && bPpeRadiat) {
-            digitalWrite(RELAY_3, LOW);
-        }
-    }
+    applyRelayTiming(bCdeRelaisR1, bChaudiere, RELAY_1, Timer1, Timer2);
+    applyRelayTiming(bCdeRelaisR2, bBoostChaud, RELAY_2, Timer3, Timer4);
+    applyRelayTiming(bCdeRelaisR3, bPpeRadiat, RELAY_3, Timer5, Timer6);
 
     lv_label_set_text_fmt(lblBtnR1small, "R1=%d", digitalRead(RELAY_1));
     lv_label_set_text_fmt(lblBtnR2small, "R2=%d", digitalRead(RELAY_2));
@@ -120,54 +101,30 @@ void DisplayAlarms(const uint16_t MBAlarm){
     //  memoXorAlarm = MBAlarm ^ MemoHMBAlarme; //Detection nouvelle alarme
         memoXorAlarm = MBAlarm; //Detection nouvelle alarme
 
+        static const char* const AlarmTexts[16] = {
+            "0 ALARME CHAUDIERE ",
+            "1 PROBLEME REGULATION PLANCHER ",
+            "2 PORTE DE GARAGE 1 OUVERTE ",
+            "3 DEFAUT PRESSION EAU CHAUFFAGE ",
+            "4 TEST MESSAGE ",
+            "5 ALARME ModbusTcp ",
+            "6 ALARME ModbusRtu ",
+            "7 Courant > 4A ",
+            "8 Fuite d eau probable ",
+            "9 Temp. Ext > Temp. Fermer les volets! ",
+            "10 Temp. Ext < Temp. Salon. Ouvrir les fenetres! ",
+            "Alarme Bit 11 ",
+            "Alarme Bit 12 ",
+            "Alarme Bit 13 ",
+            "Alarme Bit 14 ",
+            "Alarme Bit 15 ",
+        };
+
         sMessage = "";
-        if (memoXorAlarm & 0b1) { // Bit0
-            sMessage = (sMessage + sPrefix + "0 ALARME CHAUDIERE ");
-        }
-        if (memoXorAlarm & 0b10) { // Bit1
-            sMessage = (sMessage + sPrefix + "1 PROBLEME REGULATION PLANCHER ");
-        }
-        if (memoXorAlarm & 0b100) { // Bit2
-            sMessage = (sMessage + sPrefix + "2 PORTE DE GARAGE 1 OUVERTE ");
-        }
-        if (memoXorAlarm & 0b1000) { // Bit3
-            sMessage = (sMessage + sPrefix + "3 DEFAUT PRESSION EAU CHAUFFAGE ");
-        }
-        if (memoXorAlarm & 0b10000) { // Bit4
-            sMessage = (sMessage + sPrefix + "4 TEST MESSAGE ");
-        }
-        if (memoXorAlarm & 0b100000) { // Bit5
-            sMessage = (sMessage + sPrefix + "5 ALARME ModbusTcp ");
-        }
-        if (memoXorAlarm & 0b1000000) { // Bit6
-            sMessage = (sMessage + sPrefix + "6 ALARME ModbusRtu ");
-        }
-        if (memoXorAlarm & 0b10000000) { // Bit7
-            sMessage = (sMessage + sPrefix + "7 Courant > 4A ");
-        }
-        if (memoXorAlarm & 0b100000000) { // Bit8
-            sMessage = (sMessage + sPrefix + "8 Fuite d eau probable ");
-        }
-        if (memoXorAlarm & 0b1000000000) { // Bit9
-            sMessage = (sMessage + sPrefix + "9 Temp. Ext > Temp. Fermer les volets! ");
-        }
-        if (memoXorAlarm & 0b10000000000) { // Bit10
-            sMessage = (sMessage + sPrefix + "10 Temp. Ext < Temp. Salon. Ouvrir les fenetres! ");
-        }
-        if (memoXorAlarm & 0b100000000000) { // Bit11
-            sMessage = (sMessage + sPrefix + "Alarme Bit 11 ");
-        }
-        if (memoXorAlarm & 0b1000000000000) { // Bit12
-            sMessage = (sMessage + sPrefix + "Alarme Bit 12 ");
-        }
-        if (memoXorAlarm & 0b10000000000000) { // Bit13
-            sMessage = (sMessage + sPrefix + "Alarme Bit 13 ");
-        }
-        if (memoXorAlarm & 0b100000000000000) { // Bit14
-            sMessage = (sMessage + sPrefix + "Alarme Bit 14 ");
-        }
-        if (memoXorAlarm & 0b1000000000000000) { // Bit15
-            sMessage = (sMessage + sPrefix + "Alarme Bit 15 ");
+        for (uint8_t bit = 0; bit < 16; bit++) {
+            if (memoXorAlarm & (1 << bit)) {
+                sMessage += sPrefix + AlarmTexts[bit];
+            }
         }
 
         lv_label_set_text(AlarmLabel, sMessage.c_str());
