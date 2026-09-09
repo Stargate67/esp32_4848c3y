@@ -17,6 +17,8 @@ unsigned long LastModbusRequest;  // Variable to track the last Modbus request t
 
 int iState = 0;
 
+volatile unsigned long g_case20DurationUs = 0; // Diagnostic temporaire: duree du dernier passage en case 20
+
 const char *sExtMaxTimeStp = "NA:NA";
 const char *sExtMinTimeStp = "NA:NA";
 
@@ -100,14 +102,14 @@ void MainModbus() {
     break;
 
     case 5:
-    { 
+    {
       // Read holding registers from Modbus Slave
       mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
       mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
 
       iState = 20;
       if (SERDEBUG) Serial.println("iState="+String(iState));
-    } 
+    }
     break;
 
     case 10:
@@ -121,6 +123,7 @@ void MainModbus() {
     // Lecture des valeurs dans le buffer MB et mise ne forme
     case 20:
     {
+      unsigned long t0diag = micros(); // Diagnostic temporaire: mesure duree case 20
       float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
       //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
       String sTempExt = String(rTempExt, 2) + " °C";
@@ -275,6 +278,8 @@ void MainModbus() {
         }
       }
       LastModbusRequest = millis();
+      g_case20DurationUs = micros() - t0diag; // Diagnostic temporaire
+      Serial.printf("case20 dur=%lu us\n", g_case20DurationUs); // Diagnostic temporaire
       iState = 30;
     }
     break;
@@ -288,7 +293,9 @@ void MainModbus() {
         LastModbusRequest = millis();
         iState = 0;  // On recommence
         if (SERDEBUG) Serial.println(String(iState));
-        mb.disconnect(MBremote);
+        // On garde la connexion TCP ouverte (pas de disconnect ici): un connect() refait a
+        // chaque cycle bloque brievement loop() (donc l'animation LVGL) toutes les secondes.
+        // case 99 se charge deja de reconnecter si la connexion tombe reellement.
       }
     }
     break;

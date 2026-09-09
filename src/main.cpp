@@ -138,6 +138,15 @@ void setup()
 //============================================================================================================/
 
 void loop() {
+  // Diagnostic temporaire: detecte les iterations de loop() anormalement longues (saccade LVGL)
+  static unsigned long tPrevLoop = micros();
+  unsigned long tNowLoop = micros();
+  unsigned long loopGap = tNowLoop - tPrevLoop;
+  tPrevLoop = tNowLoop;
+  if (loopGap > 15000) {
+    Serial.printf("LOOP GAP %lu us, iState=%d\n", loopGap, iState);
+  }
+
   ArduinoOTA.handle();
   UpdateTickers();
 
@@ -183,19 +192,13 @@ void loop() {
     TimerScan100ms.Reset();
   }
 
-  // ========  Check Wifi each minute  =========== 
-  if (TimerCheckWifi.Q()) { // 1mn
+  // ========  Check Wifi toutes les 3s tant que non connecte  ===========
+  if (TimerCheckWifi.Q()) { // 3000ms (Tempos TimerCheckWifi(3000))
     if (WiFi.status() != WL_CONNECTED) {
-      //Serial.print(millis());
-      //Serial.println("Reconnecting to WiFi...");
       String sPrefix = "# " + String(sClockHHMM) + " ";
       String sMessage = sPrefix + "Pas de WIFI Stargate. En attente de reconnexion.";
       lv_label_set_text(AlarmLabel, sMessage.c_str());
-      delay(100);
-      UpdateTickers();
-      WiFi.disconnect();
-      delay(2000);
-      WiFi.reconnect();
+      WiFi.reconnect(); // Non bloquant: ne gele pas l'ecran/OTA pendant l'attente
     }
     TimerCheckWifi.Reset();
   }
