@@ -476,9 +476,11 @@ void InitUI(){
   ui_ScreenRelais = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(ui_ScreenRelais, lv_color_hex(0x090909), 0);
 
-  lv_CreateIPLabel(ui_ScreenMain);
-  lv_CreateClock(ui_ScreenMain);
-  lv_CreateAlarm(ui_ScreenMain);
+  // Statut com / horloge / alarme: zone commune, superposee a l'ecran actif quel qu'il
+  // soit (lv_layer_top() est transparente hors des widgets qu'on y place).
+  lv_CreateIPLabel(lv_layer_top());
+  lv_CreateClock(lv_layer_top());
+  lv_CreateAlarm(lv_layer_top());
   ui_Screen1_screen_init(ui_ScreenMain);
   ui_Screen1_screen_init_1(ui_ScreenMain);
 
@@ -498,7 +500,9 @@ void InitUI(){
   lv_obj_set_style_bg_color(btnCde, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnCde, lv_color_make(60, 60, 60), 0);
 
-  lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 0, 120, 60, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
+  // y=30: laisse la place a la zone commune (IP/horloge/alarme, sur lv_layer_top())
+  // desormais visible aussi sur cet ecran.
+  lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
   lv_obj_set_style_bg_color(btnRetour, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnRetour, lv_color_make(60, 60, 60), 0);
 

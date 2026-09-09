@@ -121,8 +121,15 @@ void MainModbus() {
     break;
 
     // Lecture des valeurs dans le buffer MB et mise ne forme
+    // Etalee sur 8 sous-etapes (subStep20) pour eviter d'invalider ~15 labels
+    // disperses sur tout l'ecran en une seule fois: l'ecran (ST7701 RGB, buffer
+    // plein-ecran unique en PSRAM, voir lib/esp32_smartdisplay) fusionne alors
+    // toutes les zones en un enorme flush qui bloque ~500ms (mesure sur site,
+    // confirme present meme sur le commit "Nouvelle box" avant cette session).
+    // En etalant sur 8 ticks de 10ms, chaque flush ne couvre qu'une zone reduite.
     case 20:
     {
+      static int subStep20 = 0;
       unsigned long t0diag = micros(); // Diagnostic temporaire: mesure duree case 20
       float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
       //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
@@ -170,117 +177,126 @@ void MainModbus() {
       //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
       //if (SERDEBUG) Serial.println("Courant " + sCourant);
 
-      // Changement de couleur des valeurs Min ou Max selon tendance de la Temp ext.
-      lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-      lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-      if (rTempExt > rAvgTempExt) {
-        lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-      } else if (rTempExt < rAvgTempExt){
-        lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-      }
-
-      // Changement de couleur de la Température Exterieure selon seuils
-      lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
-      if (rTempExt > 25.0) {
-        lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-      }
-      if (rTempExt > 32.0) {
-        lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFB2626), LV_PART_MAIN | LV_STATE_DEFAULT);
-      }
-
-      lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
-      lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
-
-      //Temp exterieure Mini
-      lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
-      //Temp exterieure Maxi
-      lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
-
-      // Affiche la moyenne exterieure a la place du salon pour essai
-      //sTempSal = "Avg: " + String(rAvgTempExt, 4);
-
-      lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
-
-      lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
-      lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
-
-      lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
-      lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
-      lv_label_set_text(ui_LblValECS, sTempECS.c_str());
-      lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
-      lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
-      lv_label_set_text(ui_LblValCourant, sCourant.c_str());
-
-      lv_label_set_text(ui_LblValConsoInstEau, String(iConsoEauInst).c_str());
-      lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst/1000.0, 3).c_str());
-      lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
-      lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
-      lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
-      lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
-      lv_label_set_text(ui_LblValConsoJ1Eau, (String(iConsoEauJ1) + " L").c_str());
-      lv_label_set_text(ui_LblValConsoJ1Elec, (String(iConsoElecJ1) + " Kwh").c_str());
-      lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
-
-      // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
-      updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud);
-
-      if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
-        bBoostChaud = 1;
-        bCdeRelaisR2 = 1;
-        // Couleur Boost differenciee sur passage d'eau reel
-        lv_color_t colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
-        lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
-        lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
-      } else {
-        bBoostChaud = 0;
-        bCdeRelaisR2 = 0;
-        lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
-        lv_obj_set_style_bg_color(ledBoost, lv_color_make( 110, 110, 110 ), 0 );
-      }
-
-      updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat);
-
-      updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher);
-
-      updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
-                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau);
-
-      // Traitement Affichage des alarmes.
-      DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
-
-      // ******  DEBUG  ***********
-      if (SERDEBUG) { 
-        Serial.print("Avg T.Ext. = ");
-        Serial.println(String(rAvgTempExt));
-      }
-      if (SERDEBUG) {
-        Serial.println("iState=" + String(iState));
-      // Print holding register values
-        Serial.println("Holding Register Values:");
-        for (int i = 0; i < NB_REGS; i++) {
-          Serial.print("Register ");
-          Serial.print(i);
-          Serial.print(": ");
-          Serial.println(MBresultANA1[i]);
+      if (subStep20 == 0) {
+        // Couleur Temp exterieure selon seuils + label
+        lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (rTempExt > 25.0) {
+          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
         }
-        Serial.println(" ");
-        Serial.println("Coils Values:");
-        Serial.println(" ");
-        Serial.println("Animations Values:");
-        for (int i = 0; i < NB_REGS_ANIM; i++) {
-          Serial.print("Registers ");
-          Serial.print(i);
-          Serial.print(": ");
-          Serial.println(MBresultANIM1[i]);
+        if (rTempExt > 32.0) {
+          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFB2626), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
+        lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
+
+        if (SERDEBUG) {
+          Serial.print("Avg T.Ext. = ");
+          Serial.println(String(rAvgTempExt));
+        }
+      } else if (subStep20 == 1) {
+        // Couleur + labels Min/Max selon tendance de la Temp ext.
+        lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (rTempExt > rAvgTempExt) {
+          lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
+        } else if (rTempExt < rAvgTempExt){
+          lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
+        lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
+        lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
+        lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
+      } else if (subStep20 == 2) {
+        lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
+      } else if (subStep20 == 3) {
+        // Plancher chauffant: temperature + consigne
+        lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
+        lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
+      } else if (subStep20 == 4) {
+        // ECS / Radiateur / Courant
+        lv_label_set_text(ui_LblValECS, sTempECS.c_str());
+        lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
+        lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
+        lv_label_set_text(ui_LblValCourant, sCourant.c_str());
+      } else if (subStep20 == 5) {
+        // Consommations instantanees Eau/Elec/Gaz
+        lv_label_set_text(ui_LblValConsoInstEau, String(iConsoEauInst).c_str());
+        lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst/1000.0, 3).c_str());
+        lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
+      } else if (subStep20 == 6) {
+        // Consommations Eau/Elec/Gaz du jour et de la veille (J-1)
+        lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
+        lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
+        lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
+        lv_label_set_text(ui_LblValConsoJ1Eau, (String(iConsoEauJ1) + " L").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Elec, (String(iConsoElecJ1) + " Kwh").c_str());
+        lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
+      } else if (subStep20 == 7) {
+        // Voyants relais (ecran Relais + ecran principal) + alarmes
+        // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
+        updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
+                             lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud);
+
+        if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
+          bBoostChaud = 1;
+          bCdeRelaisR2 = 1;
+          // Couleur Boost differenciee sur passage d'eau reel
+          lv_color_t colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
+          lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
+          lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
+        } else {
+          bBoostChaud = 0;
+          bCdeRelaisR2 = 0;
+          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
+          lv_obj_set_style_bg_color(ledBoost, lv_color_make( 110, 110, 110 ), 0 );
+        }
+
+        updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
+                             lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat);
+
+        updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
+                             lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher);
+
+        updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
+                             lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau);
+      } else { // subStep20 == 8
+        // Alarmes (touche le grand label defilant, zone separee des voyants relais)
+        // + dump SERDEBUG, isoles a part pour ne pas fusionner leur flush avec les voyants.
+        DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+
+        // ******  DEBUG  ***********
+        if (SERDEBUG) {
+          Serial.println("iState=" + String(iState));
+        // Print holding register values
+          Serial.println("Holding Register Values:");
+          for (int i = 0; i < NB_REGS; i++) {
+            Serial.print("Register ");
+            Serial.print(i);
+            Serial.print(": ");
+            Serial.println(MBresultANA1[i]);
+          }
+          Serial.println(" ");
+          Serial.println("Coils Values:");
+          Serial.println(" ");
+          Serial.println("Animations Values:");
+          for (int i = 0; i < NB_REGS_ANIM; i++) {
+            Serial.print("Registers ");
+            Serial.print(i);
+            Serial.print(": ");
+            Serial.println(MBresultANIM1[i]);
+          }
         }
       }
-      LastModbusRequest = millis();
+
       g_case20DurationUs = micros() - t0diag; // Diagnostic temporaire
-      Serial.printf("case20 dur=%lu us\n", g_case20DurationUs); // Diagnostic temporaire
-      iState = 30;
+
+      subStep20++;
+      if (subStep20 >= 9) {
+        subStep20 = 0;
+        LastModbusRequest = millis();
+        iState = 30;
+      }
+      // Sinon on reste en case 20: le prochain tick (10ms) traitera la sous-etape suivante.
     }
     break;
 
