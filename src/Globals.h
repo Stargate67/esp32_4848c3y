@@ -23,36 +23,36 @@ void InitUI(void);
 void ui_Screen1_screen_init(void);
 void ui_Screen1_screen_init_1(lv_obj_t *parent);
 //extern lv_obj_t * ui_Screen1;
-extern lv_obj_t * ui_Container1;
-extern lv_obj_t * ui_LblTempExt;
-extern lv_obj_t * ui_LblDate;
-extern lv_obj_t * ui_LblTempSalon;
-extern lv_obj_t * ui_Container2;
-extern lv_obj_t * ui_LblTempMin;
-extern lv_obj_t * ui_LblMinExt;
-extern lv_obj_t * ui_LblHeureMin;
-extern lv_obj_t * ui_Container3;
-extern lv_obj_t * ui_LblTempMax;
-extern lv_obj_t * ui_LblMaxExt;
-extern lv_obj_t * ui_LblHeureMax;
+extern lv_obj_t * ui_Container1;    // Cadre "Temp exterieure" (haut gauche, ecran principal)
+extern lv_obj_t * ui_LblTempExt;    // Grand label: temperature exterieure courante
+extern lv_obj_t * ui_LblDate;       // Label: date du jour (haut du container 1)
+extern lv_obj_t * ui_LblTempSalon;  // Label: temperature du salon (bas du container 1)
+extern lv_obj_t * ui_Container2;    // Cadre "Temp mini du jour"
+extern lv_obj_t * ui_LblTempMin;    // Valeur: temperature mini du jour
+extern lv_obj_t * ui_LblMinExt;     // Titre fixe "Min Ext."
+extern lv_obj_t * ui_LblHeureMin;   // Heure a laquelle le mini a ete releve
+extern lv_obj_t * ui_Container3;    // Cadre "Temp maxi du jour"
+extern lv_obj_t * ui_LblTempMax;    // Valeur: temperature maxi du jour
+extern lv_obj_t * ui_LblMaxExt;     // Titre fixe "Max Ext."
+extern lv_obj_t * ui_LblHeureMax;   // Heure a laquelle le maxi a ete releve
 
 
-extern lv_obj_t * ui_LblValPlancher;
-extern lv_obj_t * ui_LblValConsPlancher;
-extern lv_obj_t * ui_LblValECS;
-extern lv_obj_t * ui_LblValRadiat;
-extern lv_obj_t * ui_LblValDebitRadit;
-extern lv_obj_t * ui_LblValCourant;
+extern lv_obj_t * ui_LblValPlancher;      // Valeur: temperature plancher chauffant
+extern lv_obj_t * ui_LblValConsPlancher;  // Valeur: consigne plancher chauffant
+extern lv_obj_t * ui_LblValECS;           // Valeur: temperature ballon eau chaude sanitaire
+extern lv_obj_t * ui_LblValRadiat;        // Valeur: temperature radiateur
+extern lv_obj_t * ui_LblValDebitRadit;    // Valeur: debit du circuit radiateur (l/min)
+extern lv_obj_t * ui_LblValCourant;       // Valeur: courant electrique consomme (A)
 
-extern lv_obj_t * ui_LblValConsoInstEau;
-extern lv_obj_t * ui_LblValConsoInstElec;
-extern lv_obj_t * ui_LblValConsoInstGaz;
-extern lv_obj_t * ui_LblValConsoJEau;
-extern lv_obj_t * ui_LblValConsoJElec;
-extern lv_obj_t * ui_LblValConsoJGaz;
-extern lv_obj_t * ui_LblValConsoJ1Elec;
-extern lv_obj_t * ui_LblValConsoJ1Eau;
-extern lv_obj_t * ui_LblValConsoJ1Gaz;
+extern lv_obj_t * ui_LblValConsoInstEau;   // Consommation eau instantanee
+extern lv_obj_t * ui_LblValConsoInstElec;  // Consommation electrique instantanee
+extern lv_obj_t * ui_LblValConsoInstGaz;   // Consommation gaz instantanee
+extern lv_obj_t * ui_LblValConsoJEau;      // Consommation eau cumulee du jour
+extern lv_obj_t * ui_LblValConsoJElec;     // Consommation electrique cumulee du jour
+extern lv_obj_t * ui_LblValConsoJGaz;      // Consommation gaz cumulee du jour
+extern lv_obj_t * ui_LblValConsoJ1Elec;    // Consommation electrique totale de la veille (J-1)
+extern lv_obj_t * ui_LblValConsoJ1Eau;     // Consommation eau totale de la veille (J-1)
+extern lv_obj_t * ui_LblValConsoJ1Gaz;     // Consommation gaz totale de la veille (J-1)
 
 // CUSTOM VARIABLES
 
@@ -89,32 +89,40 @@ extern bool bRelay_5;
 
 const IPAddress MBremote(192, 168, 0, 105);   // Address of Internet Box => 192.168.0.105 PLC WAGO
 
-extern lv_obj_t *btnR1Chaudiere;
-extern lv_obj_t *btnR2BoostCh;
-extern lv_obj_t *btnR3PpeRadiateur;
-extern lv_obj_t *btnPpePlancher;
-extern lv_obj_t *btnArriveeEau;
+extern lv_obj_t *btnR1Chaudiere;     // Bouton relais Chaudiere (ecran Relais)
+extern lv_obj_t *btnR2BoostCh;       // Bouton relais Boost Chaudiere (ecran Relais)
+extern lv_obj_t *btnR3PpeRadiateur;  // Bouton relais Pompe Radiateur (ecran Relais)
+extern lv_obj_t *btnPpePlancher;     // Bouton relais Pompe Plancher chauffant (ecran Relais)
+extern lv_obj_t *btnArriveeEau;      // Bouton vanne Arrivee Eau (ecran Relais)
 
-extern lv_obj_t *lblBtnR1Chaudiere;
-extern lv_obj_t *lblBtnR1small;
+extern lv_obj_t *lblBtnR1Chaudiere;  // Texte du bouton R1 ("Chaud")
+extern lv_obj_t *lblBtnR1small;      // Petite etiquette d'etat "R1=0/1"
 
-extern lv_obj_t *lblBtnR2BoostCh;
-extern lv_obj_t *lblBtnR2small;
+extern lv_obj_t *lblBtnR2BoostCh;    // Texte du bouton R2 ("Boost")
+extern lv_obj_t *lblBtnR2small;      // Petite etiquette d'etat "R2=0/1"
 
-extern lv_obj_t *lblBtnR3PpeRadiateur;
-extern lv_obj_t *lblBtnR3small;
+extern lv_obj_t *lblBtnR3PpeRadiateur; // Texte du bouton R3 ("Radiat")
+extern lv_obj_t *lblBtnR3small;        // Petite etiquette d'etat "R3=0/1"
 
-extern lv_obj_t *lblBtnPpePlancher;
-extern lv_obj_t *lblBtnArriveeEau;
+extern lv_obj_t *lblBtnPpePlancher;    // Texte du bouton Plancher
+extern lv_obj_t *lblBtnArriveeEau;     // Texte du bouton Arrivee Eau
 
 extern lv_obj_t *lblScrolTxt_1;
 extern lv_obj_t *lblScrolTxt_2;
 extern lv_obj_t *lblScrolTxt_3;
 
-extern lv_obj_t *IPLabel;
-extern lv_obj_t *AlarmLabel;
-extern lv_obj_t *ClockLabel;
+extern lv_obj_t *IPLabel;      // Coin haut-gauche: derniere IP + etape Modbus/etat wifi
+extern lv_obj_t *AlarmLabel;   // Bandeau defilant des messages d'alarme (cliquable pour acquitter)
+extern lv_obj_t *ClockLabel;   // Horloge HH:MM:SS coin haut-droit
 extern lv_obj_t *HorScrollArea;
+
+// Voyants d'etat (petits ronds colores) affiches sur l'ecran principal pour visualiser
+// en un coup d'oeil l'etat des relais dont les boutons de commande sont sur l'ecran Relais.
+extern lv_obj_t *ledChaud;        // Voyant Chaudiere
+extern lv_obj_t *ledBoost;        // Voyant Boost Chaudiere
+extern lv_obj_t *ledRadiat;       // Voyant Pompe Radiateur
+extern lv_obj_t *ledPlancher;     // Voyant Pompe Plancher
+extern lv_obj_t *ledArriveeEau;   // Voyant Arrivee Eau
 
 extern uint16_t mbWriteCoilAddress;
 

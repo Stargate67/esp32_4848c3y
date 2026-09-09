@@ -22,38 +22,39 @@ const char *sExtMinTimeStp = "NA:NA";
 
 const char *sClock0000 = "00:00";
 
-int iReadIndex;
-int iStartIndex;
-uint16_t MBresultANA1[NB_REGS];
-uint16_t MBresultANIM1[NB_REGS_ANIM];
+int iReadIndex;   // Index d'ecriture courant dans le buffer circulaire de moyenne (fnAverage)
+int iStartIndex;  // Nombre d'echantillons deja accumules, jusqu'a NBAVGFIFO (buffer plein)
+uint16_t MBresultANA1[NB_REGS];       // Buffer de lecture des registres analogiques (temperatures, conso, etc.)
+uint16_t MBresultANIM1[NB_REGS_ANIM]; // Buffer de lecture des registres d'animation (etat marche relais + alarmes)
 //bool MBresultCL1[NB_OUTPUT1];
 
-uint16_t mbWriteCoilAddress;
+uint16_t mbWriteCoilAddress;  // Adresse de bobine Modbus a ecrire au prochain cycle (0 = rien a ecrire)
 
-lv_obj_t * ui_LblTempExt;
-lv_obj_t * ui_LblDate;
-lv_obj_t * ui_LblTempSalon;
-lv_obj_t * ui_LblTempMin;
-lv_obj_t * ui_LblHeureMin;
-lv_obj_t * ui_LblTempMax;
-lv_obj_t * ui_LblHeureMax;
+// Labels de l'ecran principal, mis a jour depuis les registres Modbus dans MainModbus() (case 20)
+lv_obj_t * ui_LblTempExt;   // Temperature exterieure courante
+lv_obj_t * ui_LblDate;      // Date du jour
+lv_obj_t * ui_LblTempSalon; // Temperature du salon
+lv_obj_t * ui_LblTempMin;   // Temperature exterieure mini du jour
+lv_obj_t * ui_LblHeureMin;  // Heure du releve mini
+lv_obj_t * ui_LblTempMax;   // Temperature exterieure maxi du jour
+lv_obj_t * ui_LblHeureMax;  // Heure du releve maxi
 
-lv_obj_t * ui_LblValPlancher;
-lv_obj_t * ui_LblValConsPlancher;
-lv_obj_t * ui_LblValECS;
-lv_obj_t * ui_LblValRadiat;
-lv_obj_t * ui_LblValDebitRadit;
-lv_obj_t * ui_LblValCourant;
+lv_obj_t * ui_LblValPlancher;      // Temperature plancher chauffant
+lv_obj_t * ui_LblValConsPlancher;  // Consigne plancher chauffant
+lv_obj_t * ui_LblValECS;           // Temperature ballon eau chaude sanitaire
+lv_obj_t * ui_LblValRadiat;        // Temperature radiateur
+lv_obj_t * ui_LblValDebitRadit;    // Debit du circuit radiateur
+lv_obj_t * ui_LblValCourant;       // Courant electrique consomme
 
-lv_obj_t * ui_LblValConsoInstEau;
-lv_obj_t * ui_LblValConsoInstElec;
-lv_obj_t * ui_LblValConsoInstGaz;
-lv_obj_t * ui_LblValConsoJEau;
-lv_obj_t * ui_LblValConsoJElec;
-lv_obj_t * ui_LblValConsoJGaz;
-lv_obj_t * ui_LblValConsoJ1Elec;
-lv_obj_t * ui_LblValConsoJ1Eau;
-lv_obj_t * ui_LblValConsoJ1Gaz;
+lv_obj_t * ui_LblValConsoInstEau;   // Consommation eau instantanee
+lv_obj_t * ui_LblValConsoInstElec;  // Consommation electrique instantanee
+lv_obj_t * ui_LblValConsoInstGaz;   // Consommation gaz instantanee
+lv_obj_t * ui_LblValConsoJEau;      // Consommation eau cumulee du jour
+lv_obj_t * ui_LblValConsoJElec;     // Consommation electrique cumulee du jour
+lv_obj_t * ui_LblValConsoJGaz;      // Consommation gaz cumulee du jour
+lv_obj_t * ui_LblValConsoJ1Elec;    // Consommation electrique totale de la veille (J-1)
+lv_obj_t * ui_LblValConsoJ1Eau;     // Consommation eau totale de la veille (J-1)
+lv_obj_t * ui_LblValConsoJ1Gaz;     // Consommation gaz totale de la veille (J-1)
 
 bool bChaudiere;    // Modbus Etat Marche Chaudière
 bool bBoostChaud;   // Modbus Etat Marche Boost Chaudière
@@ -61,17 +62,21 @@ bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
 bool bArriveeEau;   // Modbus Etat Marche arrivée eau
 
-// Applique l'etat anime d'un relais (bit de MBresultANIM1[0]) a son bool d'etat, sa commande et la couleur du bouton.
-static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn, lv_color_t colorOn, lv_color_t colorOff){
+// Applique l'etat anime d'un relais (bit de MBresultANIM1[0]) a son bool d'etat, sa commande,
+// la couleur du bouton (ecran Relais) et, si fourni, celle du voyant d'etat (ecran principal).
+static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn, lv_color_t colorOn, lv_color_t colorOff, lv_obj_t *led = nullptr){
+  lv_color_t color;
   if (animReg & mask) {
     stateFlag = 1;
     cmdFlag = 1;
-    lv_obj_set_style_bg_color(btn, colorOn, 0);
+    color = colorOn;
   } else {
     stateFlag = 0;
     cmdFlag = 0;
-    lv_obj_set_style_bg_color(btn, colorOff, 0);
+    color = colorOff;
   }
+  lv_obj_set_style_bg_color(btn, color, 0);
+  if (led) lv_obj_set_style_bg_color(led, color, 0);
 }
 
 void MainModbus() {
@@ -213,33 +218,32 @@ void MainModbus() {
       lv_label_set_text(ui_LblValConsoJ1Elec, (String(iConsoElecJ1) + " Kwh").c_str());
       lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
 
-      // Traitement animation des BPs sur retour MBus
+      // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
       updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ));
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud);
 
       if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
         bBoostChaud = 1;
         bCdeRelaisR2 = 1;
-        //Animation bouton Boost sur passage d'eau
-        if (sDebitRadiat.toFloat() > 0.1) {
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 210, 16, 52 ), 0 );
-        }else {
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 255, 130, 0 ), 0 );
-        }
+        // Couleur Boost differenciee sur passage d'eau reel
+        lv_color_t colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
+        lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
+        lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
       } else {
         bBoostChaud = 0;
         bCdeRelaisR2 = 0;
         lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
+        lv_obj_set_style_bg_color(ledBoost, lv_color_make( 110, 110, 110 ), 0 );
       }
 
       updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ));
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat);
 
       updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ));
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher);
 
       updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
-                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ));
+                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau);
 
       // Traitement Affichage des alarmes.
       DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748

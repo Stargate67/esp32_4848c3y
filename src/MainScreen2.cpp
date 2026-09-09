@@ -1,21 +1,21 @@
 
 #include "Globals.h"
 
-lv_obj_t * ui_Cont1Val;
-lv_obj_t * ui_LblPlancher;
-lv_obj_t * ui_LblConsPlancher;
-lv_obj_t * ui_LblECS;
+lv_obj_t * ui_Cont1Val;          // Cadre "Plancher / Consigne / ECS"
+lv_obj_t * ui_LblPlancher;       // Titre "T. Plancher"
+lv_obj_t * ui_LblConsPlancher;   // Titre "C. Plancher" (consigne)
+lv_obj_t * ui_LblECS;            // Titre "Ballon EC"
 
-lv_obj_t * ui_Cont2Val;
-lv_obj_t * ui_LblRadiat;
-lv_obj_t * ui_LblDebitRadiat;
-lv_obj_t * ui_LblCourant;
+lv_obj_t * ui_Cont2Val;          // Cadre "Radiateur / Debit / Courant"
+lv_obj_t * ui_LblRadiat;         // Titre "T. Radiat."
+lv_obj_t * ui_LblDebitRadiat;    // Titre "Debit Rad."
+lv_obj_t * ui_LblCourant;        // Titre "Courant"
 
-lv_obj_t * ui_ContConso;
-lv_obj_t * ui_LblConsoEau;
-lv_obj_t * ui_LblConsoElec;
-lv_obj_t * ui_LblConsoGaz;
-lv_obj_t * ui_LblTitreConso;
+lv_obj_t * ui_ContConso;         // Cadre du tableau de consommations (Eau/Elec/Gaz)
+lv_obj_t * ui_LblConsoEau;       // Titre de ligne "Eau"
+lv_obj_t * ui_LblConsoElec;      // Titre de ligne "Elec"
+lv_obj_t * ui_LblConsoGaz;       // Titre de ligne "Gaz"
+lv_obj_t * ui_LblTitreConso;     // En-tete de colonnes "Cons. Inst. Jour Jour-1"
 
 // Cree un label "valeur" standard: taille auto, position (+alignement optionnel), style de texte.
 static lv_obj_t* createValueLabel(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_align_t align,

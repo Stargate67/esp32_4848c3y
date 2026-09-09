@@ -6,30 +6,38 @@ bool bAcquitAlarme;
 
 uint32_t compteur;
 
-lv_obj_t *btnR1Chaudiere;
-lv_obj_t *btnR2BoostCh;
-lv_obj_t *btnR3PpeRadiateur;
-lv_obj_t *btnPpePlancher;
-lv_obj_t *btnArriveeEau;
+lv_obj_t *btnR1Chaudiere;     // Bouton relais Chaudiere (ecran Relais)
+lv_obj_t *btnR2BoostCh;       // Bouton relais Boost Chaudiere (ecran Relais)
+lv_obj_t *btnR3PpeRadiateur;  // Bouton relais Pompe Radiateur (ecran Relais)
+lv_obj_t *btnPpePlancher;     // Bouton relais Pompe Plancher chauffant (ecran Relais)
+lv_obj_t *btnArriveeEau;      // Bouton vanne Arrivee Eau (ecran Relais)
 
-lv_obj_t *lblBtnR1Chaudiere;
-lv_obj_t *lblBtnR1small;
+lv_obj_t *lblBtnR1Chaudiere;  // Texte du bouton R1 ("Chaud")
+lv_obj_t *lblBtnR1small;      // Petite etiquette d'etat "R1=0/1"
 
-lv_obj_t *lblBtnR2BoostCh;
-lv_obj_t *lblBtnR2small;
+lv_obj_t *lblBtnR2BoostCh;    // Texte du bouton R2 ("Boost")
+lv_obj_t *lblBtnR2small;      // Petite etiquette d'etat "R2=0/1"
 
-lv_obj_t *lblBtnR3PpeRadiateur;
-lv_obj_t *lblBtnR3small;
+lv_obj_t *lblBtnR3PpeRadiateur; // Texte du bouton R3 ("Radiat")
+lv_obj_t *lblBtnR3small;        // Petite etiquette d'etat "R3=0/1"
 
-lv_obj_t *lblBtnPpePlancher;
-lv_obj_t *lblBtnArriveeEau;
+lv_obj_t *lblBtnPpePlancher;    // Texte du bouton Plancher
+lv_obj_t *lblBtnArriveeEau;     // Texte du bouton Arrivee Eau
 
-lv_obj_t * ui_Container1;
-lv_obj_t * ui_Container2;
-lv_obj_t * ui_LblMinExt;
-lv_obj_t * ui_Container3;
-lv_obj_t * ui_LblMaxExt;
-lv_obj_t * ui_Chart1;
+lv_obj_t * ui_Container1;   // Cadre "Temp exterieure" (haut gauche, ecran principal)
+lv_obj_t * ui_Container2;   // Cadre "Temp mini du jour"
+lv_obj_t * ui_LblMinExt;    // Titre fixe "Min Ext."
+lv_obj_t * ui_Container3;   // Cadre "Temp maxi du jour"
+lv_obj_t * ui_LblMaxExt;    // Titre fixe "Max Ext."
+lv_obj_t * ui_Chart1;       // Non utilise actuellement
+
+// Voyants d'etat sur l'ecran principal, refletant l'etat des relais dont les boutons
+// de commande sont sur l'ecran Relais (mis a jour dans My_Modbus.cpp, case 20).
+lv_obj_t *ledChaud;
+lv_obj_t *ledBoost;
+lv_obj_t *ledRadiat;
+lv_obj_t *ledPlancher;
+lv_obj_t *ledArriveeEau;
 
 bool bCdeRelaisR1;  // demande de marche Relais 1
 bool bCdeRelaisR2;  // demande de marche Relais 2
@@ -39,6 +47,9 @@ static const lv_color_t Btn_grad_colors[2] = {
     LV_COLOR_MAKE(10, 10, 10),
     LV_COLOR_MAKE(30, 30, 30),
 };
+
+static lv_obj_t *ui_ScreenMain;
+static lv_obj_t *ui_ScreenRelais;
 
 //************************************************************************************************************/
 //============================================================================================================/
@@ -114,6 +125,18 @@ static void my_event_cb_ArriveeEau (lv_event_t *e){
 
         toggleRelayCoil(bRelay_5, BP_MARCHE_ARRIVEEAU, BP_ARRET_ARRIVEEAU);
         if (BP_DEBUG) Serial.println("BP ARRIVEE EAU: event code=" + String(LV_EVENT_RELEASED) + "/ Etat Relais:" + bRelay_5);
+    }
+}
+
+static void my_event_cb_GoRelaisScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_scr_load(ui_ScreenRelais);
+    }
+}
+
+static void my_event_cb_BackMainScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_scr_load(ui_ScreenMain);
     }
 }
 
@@ -332,6 +355,47 @@ static lv_obj_t* createRelaySmallLabel(lv_obj_t *btn, const char *text){
     return lbl;
 }
 
+// Cree un voyant rectangulaire (couleur grise par defaut) avec son libelle centre a l'interieur.
+// Les voyants sont accoles (bordure fine) pour former un seul bloc rectangulaire.
+// La couleur est mise a jour par updateAnimatedRelay() dans My_Modbus.cpp.
+static lv_obj_t* createStatusLed(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const char *text){
+    lv_obj_t *led = lv_obj_create(parent);
+    lv_obj_remove_style_all(led);
+    lv_obj_set_size(led, w, h);
+    lv_obj_set_x(led, x);
+    lv_obj_set_y(led, y);
+    lv_obj_clear_flag(led, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(led, lv_color_make(128, 128, 128), 0);
+    lv_obj_set_style_bg_opa(led, 255, 0);
+    lv_obj_set_style_border_width(led, 1, 0);
+    lv_obj_set_style_border_color(led, lv_color_black(), 0);
+
+    lv_obj_t *lbl = lv_label_create(led);
+    lv_obj_set_style_text_font(lbl, &lv_font_montserrat_22, 0);
+    lv_obj_set_style_text_color(lbl, lv_color_white(), 0);
+    lv_obj_center(lbl);
+    lv_label_set_text(lbl, text);
+
+    return led;
+}
+
+// Bloc rectangulaire de 5 voyants d'etat en grille 3 colonnes x 2 lignes, occupant toute
+// la hauteur restante en bas de l'ecran principal (les boutons de commande sont sur l'ecran
+// Relais). La 6e cellule (bas-droite) est reservee au bouton "Cde >", cree dans InitUI().
+void lv_createStatusLeds(lv_obj_t *parent){
+    const lv_coord_t xA = 5, colW = 156, gap = 1;
+    const lv_coord_t xB = xA + colW + gap;
+    const lv_coord_t xC = xB + colW + gap;
+    const lv_coord_t y1 = 362, rowH = 57, rowGap = 1;
+    const lv_coord_t y2 = y1 + rowH + rowGap;
+
+    ledChaud      = createStatusLed(parent, xA, y1, colW, rowH, "Chaud");
+    ledBoost      = createStatusLed(parent, xB, y1, colW, rowH, "Boost");
+    ledRadiat     = createStatusLed(parent, xC, y1, colW, rowH, "Radiat");
+    ledPlancher   = createStatusLed(parent, xA, y2, colW, rowH, "Plancher");
+    ledArriveeEau = createStatusLed(parent, xB, y2, colW, rowH, "Eau");
+}
+
 void lv_createButton_CHAUD(lv_obj_t *parent){
     btnR1Chaudiere = createRelayButtonBase(parent, 0, 360, 120, 120, "Chaud", &lblBtnR1Chaudiere, my_event_cb_R1Chaudiere);
     lblBtnR1small = createRelaySmallLabel(btnR1Chaudiere, "R1=0");
@@ -404,20 +468,39 @@ void InitUI(){
   // lv_disp_set_rotation(disp, LV_DISP_ROT_180);
   // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
 
-  // Get the active screen
-  lv_obj_t * ui_scr = lv_scr_act();
+  // Ecran principal = l'ecran actif par defaut
+  ui_ScreenMain = lv_scr_act();
+  lv_obj_set_style_bg_color(ui_ScreenMain, lv_color_hex(0x090909), 0);
 
-  // Set screen background color to dark blue
-  lv_obj_set_style_bg_color(ui_scr, lv_color_hex(0x090909), 0);
+  // 2eme ecran dedie aux boutons relais
+  ui_ScreenRelais = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(ui_ScreenRelais, lv_color_hex(0x090909), 0);
 
-  lv_CreateIPLabel(ui_scr);
-  lv_CreateClock(ui_scr);
-  lv_CreateAlarm(ui_scr);
-  ui_Screen1_screen_init(ui_scr);
-  ui_Screen1_screen_init_1(ui_scr);
-  lv_createButton_CHAUD(ui_scr);
-  lv_createButton_BOOSTCh(ui_scr);
-  lv_createButton_RADIAT(ui_scr);
-  lv_createButton_PLANCHER(ui_scr);
-  lv_createButton_ArriveeEau(ui_scr);
+  lv_CreateIPLabel(ui_ScreenMain);
+  lv_CreateClock(ui_ScreenMain);
+  lv_CreateAlarm(ui_ScreenMain);
+  ui_Screen1_screen_init(ui_ScreenMain);
+  ui_Screen1_screen_init_1(ui_ScreenMain);
+
+  lv_createButton_CHAUD(ui_ScreenRelais);
+  lv_createButton_BOOSTCh(ui_ScreenRelais);
+  lv_createButton_RADIAT(ui_ScreenRelais);
+  lv_createButton_PLANCHER(ui_ScreenRelais);
+  lv_createButton_ArriveeEau(ui_ScreenRelais);
+
+  // Voyants d'etat des relais, visibles sans quitter l'ecran principal
+  lv_createStatusLeds(ui_ScreenMain);
+
+  // Bouton "Cde >" : occupe la 6e cellule (bas-droite) de la grille de voyants 3x2
+  // (memes coordonnees que dans lv_createStatusLeds : xC/y2/colW/rowH). Fond gris fonce uni.
+  lv_obj_t *lblUnused;
+  lv_obj_t *btnCde = createRelayButtonBase(ui_ScreenMain, 319, 420, 156, 57, "Cde >", &lblUnused, my_event_cb_GoRelaisScreen);
+  lv_obj_set_style_bg_color(btnCde, lv_color_make(60, 60, 60), 0);
+  lv_obj_set_style_bg_grad_color(btnCde, lv_color_make(60, 60, 60), 0);
+
+  lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 0, 120, 60, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
+  lv_obj_set_style_bg_color(btnRetour, lv_color_make(60, 60, 60), 0);
+  lv_obj_set_style_bg_grad_color(btnRetour, lv_color_make(60, 60, 60), 0);
+
+  lv_scr_load(ui_ScreenMain);
 }
