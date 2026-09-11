@@ -64,9 +64,40 @@ bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
 bool bArriveeEau;   // Modbus Etat Marche arrivée eau
 
+// Cache pour eviter d'appeler lv_obj_set_style_*_color quand la couleur n'a pas change:
+// LVGL invalide l'objet (donc programme un flush) a chaque appel de style, sans comparer
+// a la valeur precedente (verifie dans lib/lvgl/src/core/lv_obj_style.c).
+struct ColorCache {
+  lv_color_t color{};
+  bool inited = false;
+};
+
+static bool colorChanged(ColorCache &cache, lv_color_t newColor){
+  if (!cache.inited || cache.color.red != newColor.red || cache.color.green != newColor.green ||
+      cache.color.blue != newColor.blue) {
+    cache.color = newColor;
+    cache.inited = true;
+    return true;
+  }
+  return false;
+}
+
+// Meme principe pour les labels: lv_label_set_text() invalide aussi sans comparer au texte
+// deja affiche (verifie dans lib/lvgl/src/widgets/label/lv_label.c).
+static bool textChanged(String &cache, const String &newText){
+  if (cache != newText) {
+    cache = newText;
+    return true;
+  }
+  return false;
+}
+
 // Applique l'etat anime d'un relais (bit de MBresultANIM1[0]) a son bool d'etat, sa commande,
-// la couleur du bouton (ecran Relais) et, si fourni, celle du voyant d'etat (ecran principal).
-static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn, lv_color_t colorOn, lv_color_t colorOff, lv_obj_t *led = nullptr){
+// et la couleur du bouton (ecran Relais) + du voyant d'etat (ecran principal), en ne touchant
+// le style LVGL que si la couleur a reellement change.
+static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn,
+                                 lv_color_t colorOn, lv_color_t colorOff, lv_obj_t *led,
+                                 ColorCache &btnCache, ColorCache &ledCache){
   lv_color_t color;
   if (animReg & mask) {
     stateFlag = 1;
@@ -77,8 +108,8 @@ static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag
     cmdFlag = 0;
     color = colorOff;
   }
-  lv_obj_set_style_bg_color(btn, color, 0);
-  if (led) lv_obj_set_style_bg_color(led, color, 0);
+  if (colorChanged(btnCache, color)) lv_obj_set_style_bg_color(btn, color, 0);
+  if (colorChanged(ledCache, color)) lv_obj_set_style_bg_color(led, color, 0);
 }
 
 void MainModbus() {
@@ -120,16 +151,17 @@ void MainModbus() {
     }
     break;
 
-    // Lecture des valeurs dans le buffer MB et mise ne forme
-    // Etalee sur 8 sous-etapes (subStep20) pour eviter d'invalider ~15 labels
-    // disperses sur tout l'ecran en une seule fois: l'ecran (ST7701 RGB, buffer
-    // plein-ecran unique en PSRAM, voir lib/esp32_smartdisplay) fusionne alors
-    // toutes les zones en un enorme flush qui bloque ~500ms (mesure sur site,
-    // confirme present meme sur le commit "Nouvelle box" avant cette session).
-    // En etalant sur 8 ticks de 10ms, chaque flush ne couvre qu'une zone reduite.
+    // Lecture des valeurs dans le buffer MB et mise en forme. L'ecran (ST7701 RGB, buffer
+    // plein-ecran unique en PSRAM, voir lib/esp32_smartdisplay) fusionne tout objet invalide
+    // en un seul flush qui bloque le temps de le transferer: invalider ~15 labels disperses
+    // en une fois bloquait ~500ms (mesure sur site, confirme present meme sur le commit
+    // "Nouvelle box" avant cette session). LVGL n'evite pas ca tout seul: lv_label_set_text()
+    // et lv_obj_set_style_*_color() invalident sans comparer a la valeur deja affichee (voir
+    // lib/lvgl/src/widgets/label/lv_label.c et lib/lvgl/src/core/lv_obj_style.c). On filtre
+    // donc ici via textChanged()/colorChanged(): la plupart des cycles Modbus ne changent que
+    // quelques valeurs, donc plus besoin d'etaler le travail sur plusieurs ticks (subStep20).
     case 20:
     {
-      static int subStep20 = 0;
       unsigned long t0diag = micros(); // Diagnostic temporaire: mesure duree case 20
       float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
       //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
@@ -177,126 +209,145 @@ void MainModbus() {
       //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
       //if (SERDEBUG) Serial.println("Courant " + sCourant);
 
-      if (subStep20 == 0) {
-        // Couleur Temp exterieure selon seuils + label
-        lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xC2ED34), LV_PART_MAIN | LV_STATE_DEFAULT);
-        if (rTempExt > 25.0) {
-          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        if (rTempExt > 32.0) {
-          lv_obj_set_style_text_color(ui_LblTempExt, lv_color_hex(0xFB2626), LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
-        lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
+      // --- Temp exterieure: couleur selon seuils + label ---
+      static ColorCache cacheColorTempExt;
+      static String cacheTempExt, cacheDate;
+      lv_color_t colorTempExt = lv_color_hex(0xC2ED34);
+      if (rTempExt > 25.0) colorTempExt = lv_color_hex(0xFF7D00);
+      if (rTempExt > 32.0) colorTempExt = lv_color_hex(0xFB2626);
+      if (colorChanged(cacheColorTempExt, colorTempExt)) {
+        lv_obj_set_style_text_color(ui_LblTempExt, colorTempExt, LV_PART_MAIN | LV_STATE_DEFAULT);
+      }
+      if (textChanged(cacheTempExt, sTempExt)) lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
+      if (textChanged(cacheDate, String(sDateDDMMYYYY))) lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
 
-        if (SERDEBUG) {
-          Serial.print("Avg T.Ext. = ");
-          Serial.println(String(rAvgTempExt));
-        }
-      } else if (subStep20 == 1) {
-        // Couleur + labels Min/Max selon tendance de la Temp ext.
-        lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0x00FFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        if (rTempExt > rAvgTempExt) {
-          lv_obj_set_style_text_color(ui_LblTempMax, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-        } else if (rTempExt < rAvgTempExt){
-          lv_obj_set_style_text_color(ui_LblTempMin, lv_color_hex(0xFF7D00), LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
-        lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
-        lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
-        lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
-      } else if (subStep20 == 2) {
-        lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
-      } else if (subStep20 == 3) {
-        // Plancher chauffant: temperature + consigne
-        lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
-        lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
-      } else if (subStep20 == 4) {
-        // ECS / Radiateur / Courant
-        lv_label_set_text(ui_LblValECS, sTempECS.c_str());
-        lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
-        lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
-        lv_label_set_text(ui_LblValCourant, sCourant.c_str());
-      } else if (subStep20 == 5) {
-        // Consommations instantanees Eau/Elec/Gaz
-        lv_label_set_text(ui_LblValConsoInstEau, String(iConsoEauInst).c_str());
-        lv_label_set_text(ui_LblValConsoInstElec, String(iConsoElecInst/1000.0, 3).c_str());
-        lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
-      } else if (subStep20 == 6) {
-        // Consommations Eau/Elec/Gaz du jour et de la veille (J-1)
-        lv_label_set_text(ui_LblValConsoJEau, String(iConsoEauJ).c_str());
-        lv_label_set_text(ui_LblValConsoJElec, String(iConsoElecJ).c_str());
-        lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
-        lv_label_set_text(ui_LblValConsoJ1Eau, (String(iConsoEauJ1) + " L").c_str());
-        lv_label_set_text(ui_LblValConsoJ1Elec, (String(iConsoElecJ1) + " Kwh").c_str());
-        lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
-      } else if (subStep20 == 7) {
-        // Voyants relais (ecran Relais + ecran principal) + alarmes
-        // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
-        updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
-                             lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud);
+      if (SERDEBUG) {
+        Serial.print("Avg T.Ext. = ");
+        Serial.println(String(rAvgTempExt));
+      }
 
-        if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
-          bBoostChaud = 1;
-          bCdeRelaisR2 = 1;
-          // Couleur Boost differenciee sur passage d'eau reel
-          lv_color_t colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
-          lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
-          lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
-        } else {
-          bBoostChaud = 0;
-          bCdeRelaisR2 = 0;
-          lv_obj_set_style_bg_color(btnR2BoostCh, lv_color_make( 110, 110, 110 ), 0 );
-          lv_obj_set_style_bg_color(ledBoost, lv_color_make( 110, 110, 110 ), 0 );
-        }
+      // --- Couleur + labels Min/Max selon tendance de la Temp ext. ---
+      static ColorCache cacheColorMin, cacheColorMax;
+      lv_color_t colorMin = lv_color_hex(0x00FFFF);
+      lv_color_t colorMax = lv_color_hex(0x00FFFF);
+      if (rTempExt > rAvgTempExt) {
+        colorMax = lv_color_hex(0xFF7D00);
+      } else if (rTempExt < rAvgTempExt) {
+        colorMin = lv_color_hex(0xFF7D00);
+      }
+      if (colorChanged(cacheColorMin, colorMin)) lv_obj_set_style_text_color(ui_LblTempMin, colorMin, LV_PART_MAIN | LV_STATE_DEFAULT);
+      if (colorChanged(cacheColorMax, colorMax)) lv_obj_set_style_text_color(ui_LblTempMax, colorMax, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-        updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
-                             lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat);
+      static String cacheTempMin, cacheTempMax, cacheHeureMin, cacheHeureMax;
+      if (textChanged(cacheTempMin, sTempExtMin)) lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
+      if (textChanged(cacheTempMax, sTempExtMax)) lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
+      if (textChanged(cacheHeureMin, sTempExtTimeMin)) lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
+      if (textChanged(cacheHeureMax, sTempExtTimeMax)) lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
 
-        updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
-                             lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher);
+      static String cacheTempSalon;
+      if (textChanged(cacheTempSalon, sTempSal)) lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
 
-        updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
-                             lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau);
-      } else { // subStep20 == 8
-        // Alarmes (touche le grand label defilant, zone separee des voyants relais)
-        // + dump SERDEBUG, isoles a part pour ne pas fusionner leur flush avec les voyants.
-        DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+      // --- Plancher chauffant: temperature + consigne ---
+      static String cachePlancher, cacheConsPlancher;
+      if (textChanged(cachePlancher, sTempPlancher)) lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
+      if (textChanged(cacheConsPlancher, sConsPlancher)) lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
 
-        // ******  DEBUG  ***********
-        if (SERDEBUG) {
-          Serial.println("iState=" + String(iState));
+      // --- ECS / Radiateur / Courant ---
+      static String cacheECS, cacheRadiat, cacheDebitRadiat, cacheCourant;
+      if (textChanged(cacheECS, sTempECS)) lv_label_set_text(ui_LblValECS, sTempECS.c_str());
+      if (textChanged(cacheRadiat, sTempRadiat)) lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
+      if (textChanged(cacheDebitRadiat, sDebitRadiat)) lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
+      if (textChanged(cacheCourant, sCourant)) lv_label_set_text(ui_LblValCourant, sCourant.c_str());
+
+      // --- Consommations instantanees Eau/Elec/Gaz ---
+      static String cacheConsoInstEau, cacheConsoInstElec, cacheConsoInstGaz;
+      String sConsoInstEau = String(iConsoEauInst);
+      String sConsoInstElec = String(iConsoElecInst/1000.0, 3);
+      if (textChanged(cacheConsoInstEau, sConsoInstEau)) lv_label_set_text(ui_LblValConsoInstEau, sConsoInstEau.c_str());
+      if (textChanged(cacheConsoInstElec, sConsoInstElec)) lv_label_set_text(ui_LblValConsoInstElec, sConsoInstElec.c_str());
+      if (textChanged(cacheConsoInstGaz, sConsoGazInst)) lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
+
+      // --- Consommations Eau/Elec/Gaz du jour et de la veille (J-1) ---
+      static String cacheConsoJEau, cacheConsoJElec, cacheConsoJGaz, cacheConsoJ1Eau, cacheConsoJ1Elec, cacheConsoJ1Gaz;
+      String sConsoJEau = String(iConsoEauJ);
+      String sConsoJElec = String(iConsoElecJ);
+      String sConsoJ1Eau = String(iConsoEauJ1) + " L";
+      String sConsoJ1Elec = String(iConsoElecJ1) + " Kwh";
+      if (textChanged(cacheConsoJEau, sConsoJEau)) lv_label_set_text(ui_LblValConsoJEau, sConsoJEau.c_str());
+      if (textChanged(cacheConsoJElec, sConsoJElec)) lv_label_set_text(ui_LblValConsoJElec, sConsoJElec.c_str());
+      if (textChanged(cacheConsoJGaz, sConsoGazJ)) lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
+      if (textChanged(cacheConsoJ1Eau, sConsoJ1Eau)) lv_label_set_text(ui_LblValConsoJ1Eau, sConsoJ1Eau.c_str());
+      if (textChanged(cacheConsoJ1Elec, sConsoJ1Elec)) lv_label_set_text(ui_LblValConsoJ1Elec, sConsoJ1Elec.c_str());
+      if (textChanged(cacheConsoJ1Gaz, sConsoGazJ1)) lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
+
+      // --- Voyants relais (ecran Relais + ecran principal) ---
+      // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
+      static ColorCache cacheBtnChaud, cacheLedChaud;
+      updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud,
+                           cacheBtnChaud, cacheLedChaud);
+
+      static ColorCache cacheBtnBoost, cacheLedBoost;
+      lv_color_t colorBoost;
+      if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
+        bBoostChaud = 1;
+        bCdeRelaisR2 = 1;
+        // Couleur Boost differenciee sur passage d'eau reel
+        colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
+      } else {
+        bBoostChaud = 0;
+        bCdeRelaisR2 = 0;
+        colorBoost = lv_color_make( 110, 110, 110 );
+      }
+      if (colorChanged(cacheBtnBoost, colorBoost)) lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
+      if (colorChanged(cacheLedBoost, colorBoost)) lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
+
+      static ColorCache cacheBtnRadiat, cacheLedRadiat;
+      updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat,
+                           cacheBtnRadiat, cacheLedRadiat);
+
+      static ColorCache cacheBtnPlancher, cacheLedPlancher;
+      updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
+                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher,
+                           cacheBtnPlancher, cacheLedPlancher);
+
+      static ColorCache cacheBtnArriveeEau, cacheLedArriveeEau;
+      updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
+                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau,
+                           cacheBtnArriveeEau, cacheLedArriveeEau);
+
+      // Alarmes: DisplayAlarms() ne touche deja AlarmLabel que si le registre change
+      // (voir Globals.cpp), pas besoin de filtrage supplementaire ici.
+      DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+
+      // ******  DEBUG  ***********
+      if (SERDEBUG) {
+        Serial.println("iState=" + String(iState));
         // Print holding register values
-          Serial.println("Holding Register Values:");
-          for (int i = 0; i < NB_REGS; i++) {
-            Serial.print("Register ");
-            Serial.print(i);
-            Serial.print(": ");
-            Serial.println(MBresultANA1[i]);
-          }
-          Serial.println(" ");
-          Serial.println("Coils Values:");
-          Serial.println(" ");
-          Serial.println("Animations Values:");
-          for (int i = 0; i < NB_REGS_ANIM; i++) {
-            Serial.print("Registers ");
-            Serial.print(i);
-            Serial.print(": ");
-            Serial.println(MBresultANIM1[i]);
-          }
+        Serial.println("Holding Register Values:");
+        for (int i = 0; i < NB_REGS; i++) {
+          Serial.print("Register ");
+          Serial.print(i);
+          Serial.print(": ");
+          Serial.println(MBresultANA1[i]);
+        }
+        Serial.println(" ");
+        Serial.println("Coils Values:");
+        Serial.println(" ");
+        Serial.println("Animations Values:");
+        for (int i = 0; i < NB_REGS_ANIM; i++) {
+          Serial.print("Registers ");
+          Serial.print(i);
+          Serial.print(": ");
+          Serial.println(MBresultANIM1[i]);
         }
       }
 
       g_case20DurationUs = micros() - t0diag; // Diagnostic temporaire
 
-      subStep20++;
-      if (subStep20 >= 9) {
-        subStep20 = 0;
-        LastModbusRequest = millis();
-        iState = 30;
-      }
-      // Sinon on reste en case 20: le prochain tick (10ms) traitera la sous-etape suivante.
+      LastModbusRequest = millis();
+      iState = 30;
     }
     break;
 
