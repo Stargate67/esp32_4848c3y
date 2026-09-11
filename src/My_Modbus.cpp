@@ -112,6 +112,144 @@ static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag
   if (colorChanged(ledCache, color)) lv_obj_set_style_bg_color(led, color, 0);
 }
 
+// Valeurs de l'ecran principal deja mises en forme (registres Modbus -> String/float),
+// calculees dans case 20 et transmises telles quelles a UpdateLVGLFromModbus().
+struct ModbusDisplayValues {
+  float rTempExt;
+  float rAvgTempExt;
+  String sTempExt;
+  String sTempExtMin;
+  String sTempExtMax;
+  String sTempExtTimeMin;
+  String sTempExtTimeMax;
+  String sTempSal;
+  String sTempPlancher;
+  String sConsPlancher;
+  String sTempECS;
+  String sTempRadiat;
+  String sDebitRadiat;
+  String sCourant;
+  String sConsoInstEau;
+  String sConsoInstElec;
+  String sConsoInstGaz;
+  String sConsoJEau;
+  String sConsoJElec;
+  String sConsoJGaz;
+  String sConsoJ1Eau;
+  String sConsoJ1Elec;
+  String sConsoJ1Gaz;
+};
+
+// MAJ des labels/couleurs LVGL de l'ecran principal + des voyants relais, a partir des
+// valeurs deja mises en forme par case 20. Isolee hors de MainModbus() pour ne pas
+// encombrer la machine a etats. Chaque MAJ est filtree via textChanged()/colorChanged():
+// LVGL invalide l'objet (donc programme un flush) meme si la valeur ne change pas
+// (verifie dans lib/lvgl/src/widgets/label/lv_label.c et lib/lvgl/src/core/lv_obj_style.c),
+// ce qui bloquait ~500ms sur ce panneau ST7701 (buffer plein-ecran unique en PSRAM) quand
+// tous les labels etaient invalides en une fois.
+static void UpdateLVGLFromModbus(const ModbusDisplayValues &v) {
+  // --- Temp exterieure: couleur selon seuils + label ---
+  static ColorCache cacheColorTempExt;
+  static String cacheTempExt, cacheDate;
+  lv_color_t colorTempExt = lv_color_hex(0xC2ED34);
+  if (v.rTempExt > 25.0) colorTempExt = lv_color_hex(0xFF7D00);
+  if (v.rTempExt > 32.0) colorTempExt = lv_color_hex(0xFB2626);
+  if (colorChanged(cacheColorTempExt, colorTempExt)) {
+    lv_obj_set_style_text_color(ui_LblTempExt, colorTempExt, LV_PART_MAIN | LV_STATE_DEFAULT);
+  }
+  if (textChanged(cacheTempExt, v.sTempExt)) lv_label_set_text(ui_LblTempExt, v.sTempExt.c_str());
+  if (textChanged(cacheDate, String(sDateDDMMYYYY))) lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
+
+  // --- Couleur + labels Min/Max selon tendance de la Temp ext. ---
+  static ColorCache cacheColorMin, cacheColorMax;
+  lv_color_t colorMin = lv_color_hex(0x00FFFF);
+  lv_color_t colorMax = lv_color_hex(0x00FFFF);
+  if (v.rTempExt > v.rAvgTempExt) {
+    colorMax = lv_color_hex(0xFF7D00);
+  } else if (v.rTempExt < v.rAvgTempExt) {
+    colorMin = lv_color_hex(0xFF7D00);
+  }
+  if (colorChanged(cacheColorMin, colorMin)) lv_obj_set_style_text_color(ui_LblTempMin, colorMin, LV_PART_MAIN | LV_STATE_DEFAULT);
+  if (colorChanged(cacheColorMax, colorMax)) lv_obj_set_style_text_color(ui_LblTempMax, colorMax, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  static String cacheTempMin, cacheTempMax, cacheHeureMin, cacheHeureMax;
+  if (textChanged(cacheTempMin, v.sTempExtMin)) lv_label_set_text(ui_LblTempMin, v.sTempExtMin.c_str());
+  if (textChanged(cacheTempMax, v.sTempExtMax)) lv_label_set_text(ui_LblTempMax, v.sTempExtMax.c_str());
+  if (textChanged(cacheHeureMin, v.sTempExtTimeMin)) lv_label_set_text(ui_LblHeureMin, v.sTempExtTimeMin.c_str());
+  if (textChanged(cacheHeureMax, v.sTempExtTimeMax)) lv_label_set_text(ui_LblHeureMax, v.sTempExtTimeMax.c_str());
+
+  static String cacheTempSalon;
+  if (textChanged(cacheTempSalon, v.sTempSal)) lv_label_set_text(ui_LblTempSalon, v.sTempSal.c_str());
+
+  // --- Plancher chauffant: temperature + consigne ---
+  static String cachePlancher, cacheConsPlancher;
+  if (textChanged(cachePlancher, v.sTempPlancher)) lv_label_set_text(ui_LblValPlancher, v.sTempPlancher.c_str());
+  if (textChanged(cacheConsPlancher, v.sConsPlancher)) lv_label_set_text(ui_LblValConsPlancher, v.sConsPlancher.c_str());
+
+  // --- ECS / Radiateur / Courant ---
+  static String cacheECS, cacheRadiat, cacheDebitRadiat, cacheCourant;
+  if (textChanged(cacheECS, v.sTempECS)) lv_label_set_text(ui_LblValECS, v.sTempECS.c_str());
+  if (textChanged(cacheRadiat, v.sTempRadiat)) lv_label_set_text(ui_LblValRadiat, v.sTempRadiat.c_str());
+  if (textChanged(cacheDebitRadiat, v.sDebitRadiat)) lv_label_set_text(ui_LblValDebitRadit, v.sDebitRadiat.c_str());
+  if (textChanged(cacheCourant, v.sCourant)) lv_label_set_text(ui_LblValCourant, v.sCourant.c_str());
+
+  // --- Consommations instantanees Eau/Elec/Gaz ---
+  static String cacheConsoInstEau, cacheConsoInstElec, cacheConsoInstGaz;
+  if (textChanged(cacheConsoInstEau, v.sConsoInstEau)) lv_label_set_text(ui_LblValConsoInstEau, v.sConsoInstEau.c_str());
+  if (textChanged(cacheConsoInstElec, v.sConsoInstElec)) lv_label_set_text(ui_LblValConsoInstElec, v.sConsoInstElec.c_str());
+  if (textChanged(cacheConsoInstGaz, v.sConsoInstGaz)) lv_label_set_text(ui_LblValConsoInstGaz, v.sConsoInstGaz.c_str());
+
+  // --- Consommations Eau/Elec/Gaz du jour et de la veille (J-1) ---
+  static String cacheConsoJEau, cacheConsoJElec, cacheConsoJGaz, cacheConsoJ1Eau, cacheConsoJ1Elec, cacheConsoJ1Gaz;
+  if (textChanged(cacheConsoJEau, v.sConsoJEau)) lv_label_set_text(ui_LblValConsoJEau, v.sConsoJEau.c_str());
+  if (textChanged(cacheConsoJElec, v.sConsoJElec)) lv_label_set_text(ui_LblValConsoJElec, v.sConsoJElec.c_str());
+  if (textChanged(cacheConsoJGaz, v.sConsoJGaz)) lv_label_set_text(ui_LblValConsoJGaz, v.sConsoJGaz.c_str());
+  if (textChanged(cacheConsoJ1Eau, v.sConsoJ1Eau)) lv_label_set_text(ui_LblValConsoJ1Eau, v.sConsoJ1Eau.c_str());
+  if (textChanged(cacheConsoJ1Elec, v.sConsoJ1Elec)) lv_label_set_text(ui_LblValConsoJ1Elec, v.sConsoJ1Elec.c_str());
+  if (textChanged(cacheConsoJ1Gaz, v.sConsoJ1Gaz)) lv_label_set_text(ui_LblValConsoJ1Gaz, v.sConsoJ1Gaz.c_str());
+
+  // --- Voyants relais (ecran Relais + ecran principal) ---
+  // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
+  static ColorCache cacheBtnChaud, cacheLedChaud;
+  updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud,
+                       cacheBtnChaud, cacheLedChaud);
+
+  static ColorCache cacheBtnBoost, cacheLedBoost;
+  lv_color_t colorBoost;
+  if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
+    bBoostChaud = 1;
+    bCdeRelaisR2 = 1;
+    // Couleur Boost differenciee sur passage d'eau reel
+    colorBoost = (v.sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
+  } else {
+    bBoostChaud = 0;
+    bCdeRelaisR2 = 0;
+    colorBoost = lv_color_make( 110, 110, 110 );
+  }
+  if (colorChanged(cacheBtnBoost, colorBoost)) lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
+  if (colorChanged(cacheLedBoost, colorBoost)) lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
+
+  static ColorCache cacheBtnRadiat, cacheLedRadiat;
+  updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat,
+                       cacheBtnRadiat, cacheLedRadiat);
+
+  static ColorCache cacheBtnPlancher, cacheLedPlancher;
+  updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher,
+                       cacheBtnPlancher, cacheLedPlancher);
+
+  static ColorCache cacheBtnArriveeEau, cacheLedArriveeEau;
+  updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
+                       lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau,
+                       cacheBtnArriveeEau, cacheLedArriveeEau);
+
+  // Alarmes: DisplayAlarms() ne touche deja AlarmLabel que si le registre change
+  // (voir Globals.cpp), pas besoin de filtrage supplementaire ici.
+  DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+}
+
 void MainModbus() {
   //mb.task();
   switch (iState) {
@@ -164,7 +302,7 @@ void MainModbus() {
     {
       unsigned long t0diag = micros(); // Diagnostic temporaire: mesure duree case 20
       float rTempExt = (MBresultANA1[8] * 100.0 / 32764.0) - 50.0; // Mise a l'echelle
-      //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits 
+      //float rTempExt = round(rTmp * 100.0)/100.0; // 2 digits
       String sTempExt = String(rTempExt, 2) + " °C";
 
       String sTempExtMin = String(((MBresultANA1[30] * 100.0 / 32764.0)-50.0), 1) + " °C";
@@ -179,29 +317,29 @@ void MainModbus() {
       sBuffer = String(cBuffer);
       String sTempExtTimeMax = sBuffer.substring(0, 2) + ":" + sBuffer.substring(2);
 
-      // Calcul la moyenne 
+      // Calcul la moyenne
       float rAvgTempExt = fnAverage(rTempExt);
 
       String sTempSal = "Sal: " + String(MBresultANA1[0]/10.0, 2) + " °C";
 
-      // Container Val ANA1 
+      // Container Val ANA1
       String sTempPlancher = String(MBresultANA1[1]/10.0, 1) + " °C";
       String sConsPlancher = String(MBresultANA1[12]/10.0, 1) + " °C";
-      String sTempECS = String(MBresultANA1[2]/10.0, 1)+ " °C"; // 1 digits 
+      String sTempECS = String(MBresultANA1[2]/10.0, 1)+ " °C"; // 1 digits
 
-      // Container Val ANA2 
-      String sTempRadiat = String(MBresultANA1[5]/10.0, 1)+ " °C"; // 1 digits 
-      String sDebitRadiat = String(MBresultANA1[7]/10.0, 1)+ " l/m"; // 1 digits 
+      // Container Val ANA2
+      String sTempRadiat = String(MBresultANA1[5]/10.0, 1)+ " °C"; // 1 digits
+      String sDebitRadiat = String(MBresultANA1[7]/10.0, 1)+ " l/m"; // 1 digits
       String sCourant = String(MBresultANA1[15]/1000.0, 1)+ " A"; // 3 digits vers 1 digits
 
       // Container CONSO
-      int iConsoElecInst = int(MBresultANA1[16]);  
-      int iConsoElecJ = int(MBresultANA1[17]); 
+      int iConsoElecInst = int(MBresultANA1[16]);
+      int iConsoElecJ = int(MBresultANA1[17]);
       int iConsoElecJ1 = int(MBresultANA1[18]);
       int iConsoEauInst = int(MBresultANA1[19]);
-      int iConsoEauJ = int(MBresultANA1[20]); 
+      int iConsoEauJ = int(MBresultANA1[20]);
       int iConsoEauJ1 = int(MBresultANA1[21]);
-      String sConsoGazInst = String(MBresultANA1[22]/100.0, 2); 
+      String sConsoGazInst = String(MBresultANA1[22]/100.0, 2);
       String sConsoGazJ = String(MBresultANA1[23]/100.0, 2);
       String sConsoGazJ1 = String(MBresultANA1[24]/100.0, 2) + " Nm3";
 
@@ -209,117 +347,39 @@ void MainModbus() {
       //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
       //if (SERDEBUG) Serial.println("Courant " + sCourant);
 
-      // --- Temp exterieure: couleur selon seuils + label ---
-      static ColorCache cacheColorTempExt;
-      static String cacheTempExt, cacheDate;
-      lv_color_t colorTempExt = lv_color_hex(0xC2ED34);
-      if (rTempExt > 25.0) colorTempExt = lv_color_hex(0xFF7D00);
-      if (rTempExt > 32.0) colorTempExt = lv_color_hex(0xFB2626);
-      if (colorChanged(cacheColorTempExt, colorTempExt)) {
-        lv_obj_set_style_text_color(ui_LblTempExt, colorTempExt, LV_PART_MAIN | LV_STATE_DEFAULT);
-      }
-      if (textChanged(cacheTempExt, sTempExt)) lv_label_set_text(ui_LblTempExt, sTempExt.c_str());
-      if (textChanged(cacheDate, String(sDateDDMMYYYY))) lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
-
       if (SERDEBUG) {
         Serial.print("Avg T.Ext. = ");
         Serial.println(String(rAvgTempExt));
       }
 
-      // --- Couleur + labels Min/Max selon tendance de la Temp ext. ---
-      static ColorCache cacheColorMin, cacheColorMax;
-      lv_color_t colorMin = lv_color_hex(0x00FFFF);
-      lv_color_t colorMax = lv_color_hex(0x00FFFF);
-      if (rTempExt > rAvgTempExt) {
-        colorMax = lv_color_hex(0xFF7D00);
-      } else if (rTempExt < rAvgTempExt) {
-        colorMin = lv_color_hex(0xFF7D00);
-      }
-      if (colorChanged(cacheColorMin, colorMin)) lv_obj_set_style_text_color(ui_LblTempMin, colorMin, LV_PART_MAIN | LV_STATE_DEFAULT);
-      if (colorChanged(cacheColorMax, colorMax)) lv_obj_set_style_text_color(ui_LblTempMax, colorMax, LV_PART_MAIN | LV_STATE_DEFAULT);
+      // Mise en forme terminee: transmission a UpdateLVGLFromModbus() pour la partie
+      // affichage (seule cette partie est filtree via textChanged()/colorChanged()).
+      ModbusDisplayValues v;
+      v.rTempExt = rTempExt;
+      v.rAvgTempExt = rAvgTempExt;
+      v.sTempExt = sTempExt;
+      v.sTempExtMin = sTempExtMin;
+      v.sTempExtMax = sTempExtMax;
+      v.sTempExtTimeMin = sTempExtTimeMin;
+      v.sTempExtTimeMax = sTempExtTimeMax;
+      v.sTempSal = sTempSal;
+      v.sTempPlancher = sTempPlancher;
+      v.sConsPlancher = sConsPlancher;
+      v.sTempECS = sTempECS;
+      v.sTempRadiat = sTempRadiat;
+      v.sDebitRadiat = sDebitRadiat;
+      v.sCourant = sCourant;
+      v.sConsoInstEau = String(iConsoEauInst);
+      v.sConsoInstElec = String(iConsoElecInst/1000.0, 3);
+      v.sConsoInstGaz = sConsoGazInst;
+      v.sConsoJEau = String(iConsoEauJ);
+      v.sConsoJElec = String(iConsoElecJ);
+      v.sConsoJGaz = sConsoGazJ;
+      v.sConsoJ1Eau = String(iConsoEauJ1) + " L";
+      v.sConsoJ1Elec = String(iConsoElecJ1) + " Kwh";
+      v.sConsoJ1Gaz = sConsoGazJ1;
 
-      static String cacheTempMin, cacheTempMax, cacheHeureMin, cacheHeureMax;
-      if (textChanged(cacheTempMin, sTempExtMin)) lv_label_set_text(ui_LblTempMin, sTempExtMin.c_str());
-      if (textChanged(cacheTempMax, sTempExtMax)) lv_label_set_text(ui_LblTempMax, sTempExtMax.c_str());
-      if (textChanged(cacheHeureMin, sTempExtTimeMin)) lv_label_set_text(ui_LblHeureMin, sTempExtTimeMin.c_str());
-      if (textChanged(cacheHeureMax, sTempExtTimeMax)) lv_label_set_text(ui_LblHeureMax, sTempExtTimeMax.c_str());
-
-      static String cacheTempSalon;
-      if (textChanged(cacheTempSalon, sTempSal)) lv_label_set_text(ui_LblTempSalon, sTempSal.c_str());
-
-      // --- Plancher chauffant: temperature + consigne ---
-      static String cachePlancher, cacheConsPlancher;
-      if (textChanged(cachePlancher, sTempPlancher)) lv_label_set_text(ui_LblValPlancher, sTempPlancher.c_str());
-      if (textChanged(cacheConsPlancher, sConsPlancher)) lv_label_set_text(ui_LblValConsPlancher, sConsPlancher.c_str());
-
-      // --- ECS / Radiateur / Courant ---
-      static String cacheECS, cacheRadiat, cacheDebitRadiat, cacheCourant;
-      if (textChanged(cacheECS, sTempECS)) lv_label_set_text(ui_LblValECS, sTempECS.c_str());
-      if (textChanged(cacheRadiat, sTempRadiat)) lv_label_set_text(ui_LblValRadiat, sTempRadiat.c_str());
-      if (textChanged(cacheDebitRadiat, sDebitRadiat)) lv_label_set_text(ui_LblValDebitRadit, sDebitRadiat.c_str());
-      if (textChanged(cacheCourant, sCourant)) lv_label_set_text(ui_LblValCourant, sCourant.c_str());
-
-      // --- Consommations instantanees Eau/Elec/Gaz ---
-      static String cacheConsoInstEau, cacheConsoInstElec, cacheConsoInstGaz;
-      String sConsoInstEau = String(iConsoEauInst);
-      String sConsoInstElec = String(iConsoElecInst/1000.0, 3);
-      if (textChanged(cacheConsoInstEau, sConsoInstEau)) lv_label_set_text(ui_LblValConsoInstEau, sConsoInstEau.c_str());
-      if (textChanged(cacheConsoInstElec, sConsoInstElec)) lv_label_set_text(ui_LblValConsoInstElec, sConsoInstElec.c_str());
-      if (textChanged(cacheConsoInstGaz, sConsoGazInst)) lv_label_set_text(ui_LblValConsoInstGaz, sConsoGazInst.c_str());
-
-      // --- Consommations Eau/Elec/Gaz du jour et de la veille (J-1) ---
-      static String cacheConsoJEau, cacheConsoJElec, cacheConsoJGaz, cacheConsoJ1Eau, cacheConsoJ1Elec, cacheConsoJ1Gaz;
-      String sConsoJEau = String(iConsoEauJ);
-      String sConsoJElec = String(iConsoElecJ);
-      String sConsoJ1Eau = String(iConsoEauJ1) + " L";
-      String sConsoJ1Elec = String(iConsoElecJ1) + " Kwh";
-      if (textChanged(cacheConsoJEau, sConsoJEau)) lv_label_set_text(ui_LblValConsoJEau, sConsoJEau.c_str());
-      if (textChanged(cacheConsoJElec, sConsoJElec)) lv_label_set_text(ui_LblValConsoJElec, sConsoJElec.c_str());
-      if (textChanged(cacheConsoJGaz, sConsoGazJ)) lv_label_set_text(ui_LblValConsoJGaz, sConsoGazJ.c_str());
-      if (textChanged(cacheConsoJ1Eau, sConsoJ1Eau)) lv_label_set_text(ui_LblValConsoJ1Eau, sConsoJ1Eau.c_str());
-      if (textChanged(cacheConsoJ1Elec, sConsoJ1Elec)) lv_label_set_text(ui_LblValConsoJ1Elec, sConsoJ1Elec.c_str());
-      if (textChanged(cacheConsoJ1Gaz, sConsoGazJ1)) lv_label_set_text(ui_LblValConsoJ1Gaz, sConsoGazJ1.c_str());
-
-      // --- Voyants relais (ecran Relais + ecran principal) ---
-      // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
-      static ColorCache cacheBtnChaud, cacheLedChaud;
-      updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud,
-                           cacheBtnChaud, cacheLedChaud);
-
-      static ColorCache cacheBtnBoost, cacheLedBoost;
-      lv_color_t colorBoost;
-      if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
-        bBoostChaud = 1;
-        bCdeRelaisR2 = 1;
-        // Couleur Boost differenciee sur passage d'eau reel
-        colorBoost = (sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
-      } else {
-        bBoostChaud = 0;
-        bCdeRelaisR2 = 0;
-        colorBoost = lv_color_make( 110, 110, 110 );
-      }
-      if (colorChanged(cacheBtnBoost, colorBoost)) lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
-      if (colorChanged(cacheLedBoost, colorBoost)) lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
-
-      static ColorCache cacheBtnRadiat, cacheLedRadiat;
-      updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat,
-                           cacheBtnRadiat, cacheLedRadiat);
-
-      static ColorCache cacheBtnPlancher, cacheLedPlancher;
-      updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
-                           lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher,
-                           cacheBtnPlancher, cacheLedPlancher);
-
-      static ColorCache cacheBtnArriveeEau, cacheLedArriveeEau;
-      updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
-                           lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau,
-                           cacheBtnArriveeEau, cacheLedArriveeEau);
-
-      // Alarmes: DisplayAlarms() ne touche deja AlarmLabel que si le registre change
-      // (voir Globals.cpp), pas besoin de filtrage supplementaire ici.
-      DisplayAlarms(MBresultANIM1[3]); // Registre des alarmes MD230  HR 412748
+      UpdateLVGLFromModbus(v);
 
       // ******  DEBUG  ***********
       if (SERDEBUG) {
