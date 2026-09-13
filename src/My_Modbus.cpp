@@ -6,6 +6,7 @@
 #include "Globals.h"
 #include "My_Modbus.h"
 #include <ModbusIP_ESP8266.h>
+#include <map>
 
 #define NBAVGFIFO 29
 
@@ -64,40 +65,50 @@ bool bPpeRadiat;    // Modbus Etat Marche pompe Radiateur
 bool bPpePlancher;  // Modbus Etat Marche pompe Plancher
 bool bArriveeEau;   // Modbus Etat Marche arrivée eau
 
-// Cache pour eviter d'appeler lv_obj_set_style_*_color quand la couleur n'a pas change:
-// LVGL invalide l'objet (donc programme un flush) a chaque appel de style, sans comparer
-// a la valeur precedente (verifie dans lib/lvgl/src/core/lv_obj_style.c).
-struct ColorCache {
-  lv_color_t color{};
-  bool inited = false;
-};
-
-static bool colorChanged(ColorCache &cache, lv_color_t newColor){
-  if (!cache.inited || cache.color.red != newColor.red || cache.color.green != newColor.green ||
-      cache.color.blue != newColor.blue) {
-    cache.color = newColor;
-    cache.inited = true;
-    return true;
-  }
-  return false;
+// Cache generique pour eviter d'appeler LVGL quand la valeur affichee n'a pas change: LVGL
+// invalide l'objet (donc programme un flush) a chaque lv_label_set_text()/set_style_*_color(),
+// meme si la valeur est identique (verifie dans lib/lvgl/src/widgets/label/lv_label.c et
+// lib/lvgl/src/core/lv_obj_style.c). Le cache est indexe par le pointeur lv_obj_t* dans une
+// map interne a chaque fonction: ajouter un nouveau label/couleur ne demande donc aucune
+// declaration de cache ni modification de structure, juste un appel a la bonne fonction.
+static uint32_t packColor(lv_color_t c){
+  return (uint32_t(c.red) << 16) | (uint32_t(c.green) << 8) | c.blue;
 }
 
-// Meme principe pour les labels: lv_label_set_text() invalide aussi sans comparer au texte
-// deja affiche (verifie dans lib/lvgl/src/widgets/label/lv_label.c).
-static bool textChanged(String &cache, const String &newText){
-  if (cache != newText) {
-    cache = newText;
-    return true;
+static void setLabelTextIfChanged(lv_obj_t *obj, const String &newText){
+  static std::map<lv_obj_t*, String> cache;
+  auto it = cache.find(obj);
+  if (it == cache.end() || it->second != newText) {
+    cache[obj] = newText;
+    lv_label_set_text(obj, newText.c_str());
   }
-  return false;
+}
+
+static void setTextColorIfChanged(lv_obj_t *obj, lv_color_t color){
+  static std::map<lv_obj_t*, uint32_t> cache;
+  uint32_t packed = packColor(color);
+  auto it = cache.find(obj);
+  if (it == cache.end() || it->second != packed) {
+    cache[obj] = packed;
+    lv_obj_set_style_text_color(obj, color, LV_PART_MAIN | LV_STATE_DEFAULT);
+  }
+}
+
+static void setBgColorIfChanged(lv_obj_t *obj, lv_color_t color){
+  static std::map<lv_obj_t*, uint32_t> cache;
+  uint32_t packed = packColor(color);
+  auto it = cache.find(obj);
+  if (it == cache.end() || it->second != packed) {
+    cache[obj] = packed;
+    lv_obj_set_style_bg_color(obj, color, 0);
+  }
 }
 
 // Applique l'etat anime d'un relais (bit de MBresultANIM1[0]) a son bool d'etat, sa commande,
 // et la couleur du bouton (ecran Relais) + du voyant d'etat (ecran principal), en ne touchant
 // le style LVGL que si la couleur a reellement change.
 static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag, bool &cmdFlag, lv_obj_t *btn,
-                                 lv_color_t colorOn, lv_color_t colorOff, lv_obj_t *led,
-                                 ColorCache &btnCache, ColorCache &ledCache){
+                                 lv_color_t colorOn, lv_color_t colorOff, lv_obj_t *led){
   lv_color_t color;
   if (animReg & mask) {
     stateFlag = 1;
@@ -108,37 +119,20 @@ static void updateAnimatedRelay(uint16_t animReg, uint16_t mask, bool &stateFlag
     cmdFlag = 0;
     color = colorOff;
   }
-  if (colorChanged(btnCache, color)) lv_obj_set_style_bg_color(btn, color, 0);
-  if (colorChanged(ledCache, color)) lv_obj_set_style_bg_color(led, color, 0);
+  setBgColorIfChanged(btn, color);
+  setBgColorIfChanged(led, color);
 }
 
-// Valeurs de l'ecran principal deja mises en forme (registres Modbus -> String/float),
-// calculees dans case 20 et transmises telles quelles a UpdateLVGLFromModbus().
-struct ModbusDisplayValues {
-  float rTempExt;
-  float rAvgTempExt;
-  String sTempExt;
-  String sTempExtMin;
-  String sTempExtMax;
-  String sTempExtTimeMin;
-  String sTempExtTimeMax;
-  String sTempSal;
-  String sTempPlancher;
-  String sConsPlancher;
-  String sTempECS;
-  String sTempRadiat;
-  String sDebitRadiat;
-  String sCourant;
-  String sConsoInstEau;
-  String sConsoInstElec;
-  String sConsoInstGaz;
-  String sConsoJEau;
-  String sConsoJElec;
-  String sConsoJGaz;
-  String sConsoJ1Eau;
-  String sConsoJ1Elec;
-  String sConsoJ1Gaz;
-};
+// Valeurs de l'ecran principal deja mises en forme (registres Modbus -> String), transmises
+// de case 20 a UpdateLVGLFromModbus() via une map cle/valeur generique plutot qu'une structure
+// nommee: ajouter une nouvelle valeur ne demande qu'une ligne v["MaCle"] = ... cote case 20 et
+// un get(v, "MaCle") cote affichage, sans jamais retoucher de declaration.
+using ModbusDisplayValues = std::map<String, String>;
+
+static String get(const ModbusDisplayValues &v, const char *key){
+  auto it = v.find(key);
+  return it != v.end() ? it->second : String();
+}
 
 // MAJ des labels/couleurs LVGL de l'ecran principal + des voyants relais, a partir des
 // valeurs deja mises en forme par case 20. Isolee hors de MainModbus() pour ne pas
@@ -149,101 +143,83 @@ struct ModbusDisplayValues {
 // tous les labels etaient invalides en une fois.
 static void UpdateLVGLFromModbus(const ModbusDisplayValues &v) {
   // --- Temp exterieure: couleur selon seuils + label ---
-  static ColorCache cacheColorTempExt;
-  static String cacheTempExt, cacheDate;
+  float rTempExt = get(v, "TempExtRaw").toFloat();
+  float rAvgTempExt = get(v, "AvgTempExtRaw").toFloat();
   lv_color_t colorTempExt = lv_color_hex(0xC2ED34);
-  if (v.rTempExt > 25.0) colorTempExt = lv_color_hex(0xFF7D00);
-  if (v.rTempExt > 32.0) colorTempExt = lv_color_hex(0xFB2626);
-  if (colorChanged(cacheColorTempExt, colorTempExt)) {
-    lv_obj_set_style_text_color(ui_LblTempExt, colorTempExt, LV_PART_MAIN | LV_STATE_DEFAULT);
-  }
-  if (textChanged(cacheTempExt, v.sTempExt)) lv_label_set_text(ui_LblTempExt, v.sTempExt.c_str());
-  if (textChanged(cacheDate, String(sDateDDMMYYYY))) lv_label_set_text(ui_LblDate, sDateDDMMYYYY);
+  if (rTempExt > 25.0) colorTempExt = lv_color_hex(0xFF7D00);
+  if (rTempExt > 32.0) colorTempExt = lv_color_hex(0xFB2626);
+  setTextColorIfChanged(ui_LblTempExt, colorTempExt);
+  setLabelTextIfChanged(ui_LblTempExt, get(v, "TempExt"));
+  setLabelTextIfChanged(ui_LblDate, sDateDDMMYYYY);
 
   // --- Couleur + labels Min/Max selon tendance de la Temp ext. ---
-  static ColorCache cacheColorMin, cacheColorMax;
   lv_color_t colorMin = lv_color_hex(0x00FFFF);
   lv_color_t colorMax = lv_color_hex(0x00FFFF);
-  if (v.rTempExt > v.rAvgTempExt) {
+  if (rTempExt > rAvgTempExt) {
     colorMax = lv_color_hex(0xFF7D00);
-  } else if (v.rTempExt < v.rAvgTempExt) {
+  } else if (rTempExt < rAvgTempExt) {
     colorMin = lv_color_hex(0xFF7D00);
   }
-  if (colorChanged(cacheColorMin, colorMin)) lv_obj_set_style_text_color(ui_LblTempMin, colorMin, LV_PART_MAIN | LV_STATE_DEFAULT);
-  if (colorChanged(cacheColorMax, colorMax)) lv_obj_set_style_text_color(ui_LblTempMax, colorMax, LV_PART_MAIN | LV_STATE_DEFAULT);
+  setTextColorIfChanged(ui_LblTempMin, colorMin);
+  setTextColorIfChanged(ui_LblTempMax, colorMax);
 
-  static String cacheTempMin, cacheTempMax, cacheHeureMin, cacheHeureMax;
-  if (textChanged(cacheTempMin, v.sTempExtMin)) lv_label_set_text(ui_LblTempMin, v.sTempExtMin.c_str());
-  if (textChanged(cacheTempMax, v.sTempExtMax)) lv_label_set_text(ui_LblTempMax, v.sTempExtMax.c_str());
-  if (textChanged(cacheHeureMin, v.sTempExtTimeMin)) lv_label_set_text(ui_LblHeureMin, v.sTempExtTimeMin.c_str());
-  if (textChanged(cacheHeureMax, v.sTempExtTimeMax)) lv_label_set_text(ui_LblHeureMax, v.sTempExtTimeMax.c_str());
+  setLabelTextIfChanged(ui_LblTempMin, get(v, "TempExtMin"));
+  setLabelTextIfChanged(ui_LblTempMax, get(v, "TempExtMax"));
+  setLabelTextIfChanged(ui_LblHeureMin, get(v, "HeureMin"));
+  setLabelTextIfChanged(ui_LblHeureMax, get(v, "HeureMax"));
 
-  static String cacheTempSalon;
-  if (textChanged(cacheTempSalon, v.sTempSal)) lv_label_set_text(ui_LblTempSalon, v.sTempSal.c_str());
+  setLabelTextIfChanged(ui_LblTempSalon, get(v, "TempSalon"));
 
   // --- Plancher chauffant: temperature + consigne ---
-  static String cachePlancher, cacheConsPlancher;
-  if (textChanged(cachePlancher, v.sTempPlancher)) lv_label_set_text(ui_LblValPlancher, v.sTempPlancher.c_str());
-  if (textChanged(cacheConsPlancher, v.sConsPlancher)) lv_label_set_text(ui_LblValConsPlancher, v.sConsPlancher.c_str());
+  setLabelTextIfChanged(ui_LblValPlancher, get(v, "TempPlancher"));
+  setLabelTextIfChanged(ui_LblValConsPlancher, get(v, "ConsPlancher"));
 
   // --- ECS / Radiateur / Courant ---
-  static String cacheECS, cacheRadiat, cacheDebitRadiat, cacheCourant;
-  if (textChanged(cacheECS, v.sTempECS)) lv_label_set_text(ui_LblValECS, v.sTempECS.c_str());
-  if (textChanged(cacheRadiat, v.sTempRadiat)) lv_label_set_text(ui_LblValRadiat, v.sTempRadiat.c_str());
-  if (textChanged(cacheDebitRadiat, v.sDebitRadiat)) lv_label_set_text(ui_LblValDebitRadit, v.sDebitRadiat.c_str());
-  if (textChanged(cacheCourant, v.sCourant)) lv_label_set_text(ui_LblValCourant, v.sCourant.c_str());
+  setLabelTextIfChanged(ui_LblValECS, get(v, "TempECS"));
+  setLabelTextIfChanged(ui_LblValRadiat, get(v, "TempRadiat"));
+  setLabelTextIfChanged(ui_LblValDebitRadit, get(v, "DebitRadiat"));
+  setLabelTextIfChanged(ui_LblValCourant, get(v, "Courant"));
 
   // --- Consommations instantanees Eau/Elec/Gaz ---
-  static String cacheConsoInstEau, cacheConsoInstElec, cacheConsoInstGaz;
-  if (textChanged(cacheConsoInstEau, v.sConsoInstEau)) lv_label_set_text(ui_LblValConsoInstEau, v.sConsoInstEau.c_str());
-  if (textChanged(cacheConsoInstElec, v.sConsoInstElec)) lv_label_set_text(ui_LblValConsoInstElec, v.sConsoInstElec.c_str());
-  if (textChanged(cacheConsoInstGaz, v.sConsoInstGaz)) lv_label_set_text(ui_LblValConsoInstGaz, v.sConsoInstGaz.c_str());
+  setLabelTextIfChanged(ui_LblValConsoInstEau, get(v, "ConsoInstEau"));
+  setLabelTextIfChanged(ui_LblValConsoInstElec, get(v, "ConsoInstElec"));
+  setLabelTextIfChanged(ui_LblValConsoInstGaz, get(v, "ConsoInstGaz"));
 
   // --- Consommations Eau/Elec/Gaz du jour et de la veille (J-1) ---
-  static String cacheConsoJEau, cacheConsoJElec, cacheConsoJGaz, cacheConsoJ1Eau, cacheConsoJ1Elec, cacheConsoJ1Gaz;
-  if (textChanged(cacheConsoJEau, v.sConsoJEau)) lv_label_set_text(ui_LblValConsoJEau, v.sConsoJEau.c_str());
-  if (textChanged(cacheConsoJElec, v.sConsoJElec)) lv_label_set_text(ui_LblValConsoJElec, v.sConsoJElec.c_str());
-  if (textChanged(cacheConsoJGaz, v.sConsoJGaz)) lv_label_set_text(ui_LblValConsoJGaz, v.sConsoJGaz.c_str());
-  if (textChanged(cacheConsoJ1Eau, v.sConsoJ1Eau)) lv_label_set_text(ui_LblValConsoJ1Eau, v.sConsoJ1Eau.c_str());
-  if (textChanged(cacheConsoJ1Elec, v.sConsoJ1Elec)) lv_label_set_text(ui_LblValConsoJ1Elec, v.sConsoJ1Elec.c_str());
-  if (textChanged(cacheConsoJ1Gaz, v.sConsoJ1Gaz)) lv_label_set_text(ui_LblValConsoJ1Gaz, v.sConsoJ1Gaz.c_str());
+  setLabelTextIfChanged(ui_LblValConsoJEau, get(v, "ConsoJEau"));
+  setLabelTextIfChanged(ui_LblValConsoJElec, get(v, "ConsoJElec"));
+  setLabelTextIfChanged(ui_LblValConsoJGaz, get(v, "ConsoJGaz"));
+  setLabelTextIfChanged(ui_LblValConsoJ1Eau, get(v, "ConsoJ1Eau"));
+  setLabelTextIfChanged(ui_LblValConsoJ1Elec, get(v, "ConsoJ1Elec"));
+  setLabelTextIfChanged(ui_LblValConsoJ1Gaz, get(v, "ConsoJ1Gaz"));
 
   // --- Voyants relais (ecran Relais + ecran principal) ---
   // Traitement animation des BPs sur retour MBus (bouton ecran Relais + voyant ecran principal)
-  static ColorCache cacheBtnChaud, cacheLedChaud;
   updateAnimatedRelay(MBresultANIM1[0], MASK_CHAUD, bChaudiere, bCdeRelaisR1, btnR1Chaudiere,
-                       lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud,
-                       cacheBtnChaud, cacheLedChaud);
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 100, 100, 100 ), ledChaud);
 
-  static ColorCache cacheBtnBoost, cacheLedBoost;
   lv_color_t colorBoost;
   if (MBresultANIM1[0] & MASK_BOOST_ANIM) {
     bBoostChaud = 1;
     bCdeRelaisR2 = 1;
     // Couleur Boost differenciee sur passage d'eau reel
-    colorBoost = (v.sDebitRadiat.toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
+    colorBoost = (get(v, "DebitRadiat").toFloat() > 0.1) ? lv_color_make( 210, 16, 52 ) : lv_color_make( 255, 130, 0 );
   } else {
     bBoostChaud = 0;
     bCdeRelaisR2 = 0;
     colorBoost = lv_color_make( 110, 110, 110 );
   }
-  if (colorChanged(cacheBtnBoost, colorBoost)) lv_obj_set_style_bg_color(btnR2BoostCh, colorBoost, 0 );
-  if (colorChanged(cacheLedBoost, colorBoost)) lv_obj_set_style_bg_color(ledBoost, colorBoost, 0 );
+  setBgColorIfChanged(btnR2BoostCh, colorBoost);
+  setBgColorIfChanged(ledBoost, colorBoost);
 
-  static ColorCache cacheBtnRadiat, cacheLedRadiat;
   updateAnimatedRelay(MBresultANIM1[0], MASK_PPERADIAT, bPpeRadiat, bCdeRelaisR3, btnR3PpeRadiateur,
-                       lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat,
-                       cacheBtnRadiat, cacheLedRadiat);
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 120, 120, 120 ), ledRadiat);
 
-  static ColorCache cacheBtnPlancher, cacheLedPlancher;
   updateAnimatedRelay(MBresultANIM1[0], MASK_PPEPLANCHER, bPpePlancher, bRelay_4, btnPpePlancher,
-                       lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher,
-                       cacheBtnPlancher, cacheLedPlancher);
+                       lv_color_make( 0, 160, 60 ), lv_color_make( 130, 130, 130 ), ledPlancher);
 
-  static ColorCache cacheBtnArriveeEau, cacheLedArriveeEau;
   updateAnimatedRelay(MBresultANIM1[0], MASK_ARRIVEEAU, bArriveeEau, bRelay_5, btnArriveeEau,
-                       lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau,
-                       cacheBtnArriveeEau, cacheLedArriveeEau);
+                       lv_color_make( 40, 112, 226 ), lv_color_make( 130, 130, 130 ), ledArriveeEau);
 
   // Alarmes: DisplayAlarms() ne touche deja AlarmLabel que si le registre change
   // (voir Globals.cpp), pas besoin de filtrage supplementaire ici.
@@ -355,29 +331,29 @@ void MainModbus() {
       // Mise en forme terminee: transmission a UpdateLVGLFromModbus() pour la partie
       // affichage (seule cette partie est filtree via textChanged()/colorChanged()).
       ModbusDisplayValues v;
-      v.rTempExt = rTempExt;
-      v.rAvgTempExt = rAvgTempExt;
-      v.sTempExt = sTempExt;
-      v.sTempExtMin = sTempExtMin;
-      v.sTempExtMax = sTempExtMax;
-      v.sTempExtTimeMin = sTempExtTimeMin;
-      v.sTempExtTimeMax = sTempExtTimeMax;
-      v.sTempSal = sTempSal;
-      v.sTempPlancher = sTempPlancher;
-      v.sConsPlancher = sConsPlancher;
-      v.sTempECS = sTempECS;
-      v.sTempRadiat = sTempRadiat;
-      v.sDebitRadiat = sDebitRadiat;
-      v.sCourant = sCourant;
-      v.sConsoInstEau = String(iConsoEauInst);
-      v.sConsoInstElec = String(iConsoElecInst/1000.0, 3);
-      v.sConsoInstGaz = sConsoGazInst;
-      v.sConsoJEau = String(iConsoEauJ);
-      v.sConsoJElec = String(iConsoElecJ);
-      v.sConsoJGaz = sConsoGazJ;
-      v.sConsoJ1Eau = String(iConsoEauJ1) + " L";
-      v.sConsoJ1Elec = String(iConsoElecJ1) + " Kwh";
-      v.sConsoJ1Gaz = sConsoGazJ1;
+      v["TempExtRaw"] = String(rTempExt, 4);
+      v["AvgTempExtRaw"] = String(rAvgTempExt, 4);
+      v["TempExt"] = sTempExt;
+      v["TempExtMin"] = sTempExtMin;
+      v["TempExtMax"] = sTempExtMax;
+      v["HeureMin"] = sTempExtTimeMin;
+      v["HeureMax"] = sTempExtTimeMax;
+      v["TempSalon"] = sTempSal;
+      v["TempPlancher"] = sTempPlancher;
+      v["ConsPlancher"] = sConsPlancher;
+      v["TempECS"] = sTempECS;
+      v["TempRadiat"] = sTempRadiat;
+      v["DebitRadiat"] = sDebitRadiat;
+      v["Courant"] = sCourant;
+      v["ConsoInstEau"] = String(iConsoEauInst);
+      v["ConsoInstElec"] = String(iConsoElecInst/1000.0, 3);
+      v["ConsoInstGaz"] = sConsoGazInst;
+      v["ConsoJEau"] = String(iConsoEauJ);
+      v["ConsoJElec"] = String(iConsoElecJ);
+      v["ConsoJGaz"] = sConsoGazJ;
+      v["ConsoJ1Eau"] = String(iConsoEauJ1) + " L";
+      v["ConsoJ1Elec"] = String(iConsoElecJ1) + " Kwh";
+      v["ConsoJ1Gaz"] = sConsoGazJ1;
 
       UpdateLVGLFromModbus(v);
 
