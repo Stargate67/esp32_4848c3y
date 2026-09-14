@@ -3,6 +3,7 @@
 #include "time.h"
 #include "My_Modbus.h"
 #include "Globals.h"
+#include <Preferences.h>
 
 void UpdateTickers(void);
 
@@ -16,6 +17,13 @@ IPAddress subnet(255, 255, 255, 0);     //masque de sous réseau
 IPAddress dns(192, 168, 0, 254);  //DNS
 
 WiFiClient client;
+
+// Identifiants WiFi persistants (NVS): charges au boot par loadWifiCredentials(), modifiables
+// a chaud depuis l'ecran de configuration WiFi (voir MainScreen.cpp) via applyWifiCredentials().
+// credentials.h ne sert plus que de valeur par defaut au tout premier boot (NVS vide).
+static Preferences wifiPrefs;
+String gWifiSsid;
+String gWifiPassword;
 
 //char *sClockHHMMSS;
 char sClockHHMM[15];
@@ -58,10 +66,35 @@ void initTime(String timezone){
   setTimezone(timezone);
 }
 
+// Lit SSID/mot de passe depuis la NVS (Preferences); au tout premier boot (rien en NVS),
+// se rabat sur les valeurs par defaut de credentials.h.
+void loadWifiCredentials(){
+  wifiPrefs.begin("wifi", true);
+  gWifiSsid = wifiPrefs.getString("ssid", ssid);
+  gWifiPassword = wifiPrefs.getString("pass", password);
+  wifiPrefs.end();
+}
+
+// Enregistre les nouveaux identifiants en NVS et reconnecte a chaud (pas de reboot):
+// WiFi.begin() est non bloquant, la reconnexion est ensuite suivie par le TimerCheckWifi
+// existant dans loop() qui reflete l'etat via WiFi.status() (IPLabel/AlarmLabel).
+void applyWifiCredentials(const String &newSsid, const String &newPassword){
+  wifiPrefs.begin("wifi", false);
+  wifiPrefs.putString("ssid", newSsid);
+  wifiPrefs.putString("pass", newPassword);
+  wifiPrefs.end();
+
+  gWifiSsid = newSsid;
+  gWifiPassword = newPassword;
+
+  WiFi.disconnect();
+  WiFi.begin(gWifiSsid.c_str(), gWifiPassword.c_str());
+}
+
 void startWifi(){
   WiFi.mode(WIFI_STA);
-  WiFi.config(IP, gateway, subnet, dns);  
-  WiFi.begin(ssid, password);
+  WiFi.config(IP, gateway, subnet, dns);
+  WiFi.begin(gWifiSsid.c_str(), gWifiPassword.c_str());
 
   while (WiFi.status() != WL_CONNECTED) {
     Serial.println("Recherche WIFI......");
@@ -110,6 +143,9 @@ void setup()
 {
   Serial.begin(115200);
 
+  loadWifiCredentials();
+  loadPLCAddress();
+
   pinMode(RELAY_1, OUTPUT);
   pinMode(RELAY_2, OUTPUT);
   pinMode(RELAY_3, OUTPUT);
@@ -127,7 +163,7 @@ void setup()
   //mb.config();
   //mb.addHreg(0, 123); // Example holding register value
 
-  setupOTA("ESP32_4848SD_HOMIS_FY", ssid, password);
+  setupOTA("ESP32_4848SD_HOMIS_FY", gWifiSsid.c_str(), gWifiPassword.c_str());
 
   initTime("CET-1CEST,M3.5.0,M10.5.0/3");   // Set for Paris/FR
 }
@@ -196,7 +232,7 @@ void loop() {
   if (TimerCheckWifi.Q()) { // 3000ms (Tempos TimerCheckWifi(3000))
     if (WiFi.status() != WL_CONNECTED) {
       String sPrefix = "# " + String(sClockHHMM) + " ";
-      String sMessage = sPrefix + "Pas de WIFI Stargate. En attente de reconnexion.";
+      String sMessage = sPrefix + "Pas de WIFI " + gWifiSsid + ". En attente de reconnexion.";
       lv_label_set_text(AlarmLabel, sMessage.c_str());
       WiFi.reconnect(); // Non bloquant: ne gele pas l'ecran/OTA pendant l'attente
     }

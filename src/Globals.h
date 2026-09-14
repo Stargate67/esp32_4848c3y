@@ -87,7 +87,8 @@ extern bool bRelay_3;
 extern bool bRelay_4;
 extern bool bRelay_5;
 
-const IPAddress MBremote(192, 168, 0, 105);   // Address of Internet Box => 192.168.0.105 PLC WAGO
+extern IPAddress MBremote;   // Adresse IP du PLC WAGO, mutable: voir loadPLCAddress()/applyPLCAddress() dans My_Modbus.cpp
+void applyPLCAddress(const IPAddress &newAddr);
 
 extern lv_obj_t *btnR1Chaudiere;     // Bouton relais Chaudiere (ecran Relais)
 extern lv_obj_t *btnR2BoostCh;       // Bouton relais Boost Chaudiere (ecran Relais)
@@ -125,6 +126,11 @@ extern lv_obj_t *ledPlancher;     // Voyant Pompe Plancher
 extern lv_obj_t *ledArriveeEau;   // Voyant Arrivee Eau
 
 extern uint16_t mbWriteCoilAddress;
+
+// Identifiants WiFi persistants (NVS), voir main.cpp: loadWifiCredentials()/applyWifiCredentials().
+extern String gWifiSsid;
+extern String gWifiPassword;
+void applyWifiCredentials(const String &newSsid, const String &newPassword);
 
 constexpr uint16_t MB_READ_INTERVAL = 1000; 
 

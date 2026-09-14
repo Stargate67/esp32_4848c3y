@@ -50,6 +50,15 @@ static const lv_color_t Btn_grad_colors[2] = {
 
 static lv_obj_t *ui_ScreenMain;
 static lv_obj_t *ui_ScreenRelais;
+static lv_obj_t *ui_ScreenWifi;   // Ecran de configuration WiFi (SSID/mot de passe), accessible depuis l'ecran Relais
+static lv_obj_t *ui_ScreenPLC;    // Ecran de configuration de l'adresse IP du PLC, accessible depuis l'ecran Relais
+
+static lv_obj_t *taWifiSsid;
+static lv_obj_t *taWifiPass;
+static lv_obj_t *kbWifi;
+
+static lv_obj_t *taPlcIp;
+static lv_obj_t *kbPlc;
 
 //************************************************************************************************************/
 //============================================================================================================/
@@ -137,6 +146,77 @@ static void my_event_cb_GoRelaisScreen(lv_event_t *e){
 static void my_event_cb_BackMainScreen(lv_event_t *e){
     if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
         lv_scr_load(ui_ScreenMain);
+    }
+}
+
+static void my_event_cb_GoWifiScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_scr_load(ui_ScreenWifi);
+    }
+}
+
+static void my_event_cb_BackFromWifiScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_obj_add_flag(kbWifi, LV_OBJ_FLAG_HIDDEN);
+        lv_keyboard_set_textarea(kbWifi, NULL);
+        lv_scr_load(ui_ScreenRelais);
+    }
+}
+
+// Affiche le clavier LVGL et l'attache au textarea qui vient de prendre le focus.
+static void my_event_cb_WifiTaFocused(lv_event_t *e){
+    lv_obj_t *ta = (lv_obj_t*)lv_event_get_target(e);
+    lv_keyboard_set_textarea(kbWifi, ta);
+    lv_obj_clear_flag(kbWifi, LV_OBJ_FLAG_HIDDEN);
+}
+
+// Cache le clavier quand on quitte le champ ou qu'on valide/annule depuis le clavier lui-meme.
+static void my_event_cb_WifiKbHide(lv_event_t *e){
+    lv_obj_add_flag(kbWifi, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(kbWifi, NULL);
+}
+
+// Lit les 2 champs et applique/enregistre les nouveaux identifiants WiFi (reconnexion a chaud,
+// voir applyWifiCredentials() dans main.cpp).
+static void my_event_cb_WifiSave(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        applyWifiCredentials(lv_textarea_get_text(taWifiSsid), lv_textarea_get_text(taWifiPass));
+    }
+}
+
+static void my_event_cb_GoPLCScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_scr_load(ui_ScreenPLC);
+    }
+}
+
+static void my_event_cb_BackFromPLCScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_obj_add_flag(kbPlc, LV_OBJ_FLAG_HIDDEN);
+        lv_keyboard_set_textarea(kbPlc, NULL);
+        lv_scr_load(ui_ScreenRelais);
+    }
+}
+
+static void my_event_cb_PlcTaFocused(lv_event_t *e){
+    lv_obj_t *ta = (lv_obj_t*)lv_event_get_target(e);
+    lv_keyboard_set_textarea(kbPlc, ta);
+    lv_obj_clear_flag(kbPlc, LV_OBJ_FLAG_HIDDEN);
+}
+
+static void my_event_cb_PlcKbHide(lv_event_t *e){
+    lv_obj_add_flag(kbPlc, LV_OBJ_FLAG_HIDDEN);
+    lv_keyboard_set_textarea(kbPlc, NULL);
+}
+
+// Valide et applique la nouvelle adresse IP du PLC (voir applyPLCAddress() dans My_Modbus.cpp).
+// Une saisie invalide (mauvais format) est simplement ignoree, le champ garde le texte saisi.
+static void my_event_cb_PlcSave(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        IPAddress addr;
+        if (addr.fromString(lv_textarea_get_text(taPlcIp))) {
+            applyPLCAddress(addr);
+        }
     }
 }
 
@@ -422,6 +502,89 @@ void lv_createButton_ArriveeEau(lv_obj_t *parent){
     lv_obj_set_style_text_align(lblBtnArriveeEau, LV_TEXT_ALIGN_CENTER, 0);
 }
 
+// Cree un ecran de configuration WiFi: 2 champs (SSID en clair, mot de passe masque),
+// pre-remplis avec les identifiants courants (gWifiSsid/gWifiPassword), un clavier LVGL
+// attache dynamiquement au champ ayant le focus, et les boutons Enregistrer/Retour.
+void lv_createScreenWifi(lv_obj_t *parent){
+    // y de depart choisi pour rester sous le bouton "< Retour" (0,30,120,60 => bas a y=90)
+    lv_obj_t *lblSsid = lv_label_create(parent);
+    lv_label_set_text(lblSsid, "SSID");
+    lv_obj_set_style_text_color(lblSsid, lv_color_white(), 0);
+    lv_obj_set_style_text_font(lblSsid, &lv_font_montserrat_20, 0);
+    lv_obj_set_pos(lblSsid, 20, 110);
+
+    taWifiSsid = lv_textarea_create(parent);
+    lv_obj_set_size(taWifiSsid, 300, 50);
+    lv_obj_set_pos(taWifiSsid, 20, 140);
+    lv_textarea_set_one_line(taWifiSsid, true);
+    lv_textarea_set_text(taWifiSsid, gWifiSsid.c_str());
+    lv_obj_add_event_cb(taWifiSsid, my_event_cb_WifiTaFocused, LV_EVENT_FOCUSED, NULL);
+    lv_obj_add_event_cb(taWifiSsid, my_event_cb_WifiKbHide, LV_EVENT_DEFOCUSED, NULL);
+
+    lv_obj_t *lblPass = lv_label_create(parent);
+    lv_label_set_text(lblPass, "Mot de passe");
+    lv_obj_set_style_text_color(lblPass, lv_color_white(), 0);
+    lv_obj_set_style_text_font(lblPass, &lv_font_montserrat_20, 0);
+    lv_obj_set_pos(lblPass, 20, 210);
+
+    taWifiPass = lv_textarea_create(parent);
+    lv_obj_set_size(taWifiPass, 300, 50);
+    lv_obj_set_pos(taWifiPass, 20, 240);
+    lv_textarea_set_one_line(taWifiPass, true);
+    lv_textarea_set_password_mode(taWifiPass, true);
+    lv_textarea_set_text(taWifiPass, gWifiPassword.c_str());
+    lv_obj_add_event_cb(taWifiPass, my_event_cb_WifiTaFocused, LV_EVENT_FOCUSED, NULL);
+    lv_obj_add_event_cb(taWifiPass, my_event_cb_WifiKbHide, LV_EVENT_DEFOCUSED, NULL);
+
+    lv_obj_t *lblUnused;
+    lv_obj_t *btnSave = createRelayButtonBase(parent, 340, 140, 120, 50, "Enregistrer", &lblUnused, my_event_cb_WifiSave);
+    lv_obj_set_style_bg_color(btnSave, lv_color_make(0, 120, 40), 0);
+    lv_obj_set_style_bg_grad_color(btnSave, lv_color_make(0, 120, 40), 0);
+
+    lv_obj_t *btnBack = createRelayButtonBase(parent, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackFromWifiScreen);
+    lv_obj_set_style_bg_color(btnBack, lv_color_make(60, 60, 60), 0);
+    lv_obj_set_style_bg_grad_color(btnBack, lv_color_make(60, 60, 60), 0);
+
+    kbWifi = lv_keyboard_create(parent);
+    lv_obj_add_flag(kbWifi, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(kbWifi, my_event_cb_WifiKbHide, LV_EVENT_READY, NULL);
+    lv_obj_add_event_cb(kbWifi, my_event_cb_WifiKbHide, LV_EVENT_CANCEL, NULL);
+}
+
+// Cree un ecran de configuration de l'adresse IP du PLC WAGO: un champ pre-rempli avec
+// l'adresse courante (MBremote), un clavier numerique LVGL, boutons Enregistrer/Retour.
+void lv_createScreenPLC(lv_obj_t *parent){
+    // y de depart choisi pour rester sous le bouton "< Retour" (0,30,120,60 => bas a y=90)
+    lv_obj_t *lblIp = lv_label_create(parent);
+    lv_label_set_text(lblIp, "Adresse IP du PLC");
+    lv_obj_set_style_text_color(lblIp, lv_color_white(), 0);
+    lv_obj_set_style_text_font(lblIp, &lv_font_montserrat_20, 0);
+    lv_obj_set_pos(lblIp, 20, 110);
+
+    taPlcIp = lv_textarea_create(parent);
+    lv_obj_set_size(taPlcIp, 220, 50);
+    lv_obj_set_pos(taPlcIp, 20, 140);
+    lv_textarea_set_one_line(taPlcIp, true);
+    lv_textarea_set_text(taPlcIp, MBremote.toString().c_str());
+    lv_obj_add_event_cb(taPlcIp, my_event_cb_PlcTaFocused, LV_EVENT_FOCUSED, NULL);
+    lv_obj_add_event_cb(taPlcIp, my_event_cb_PlcKbHide, LV_EVENT_DEFOCUSED, NULL);
+
+    lv_obj_t *lblUnused;
+    lv_obj_t *btnSave = createRelayButtonBase(parent, 260, 140, 120, 50, "Enregistrer", &lblUnused, my_event_cb_PlcSave);
+    lv_obj_set_style_bg_color(btnSave, lv_color_make(0, 120, 40), 0);
+    lv_obj_set_style_bg_grad_color(btnSave, lv_color_make(0, 120, 40), 0);
+
+    lv_obj_t *btnBack = createRelayButtonBase(parent, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackFromPLCScreen);
+    lv_obj_set_style_bg_color(btnBack, lv_color_make(60, 60, 60), 0);
+    lv_obj_set_style_bg_grad_color(btnBack, lv_color_make(60, 60, 60), 0);
+
+    kbPlc = lv_keyboard_create(parent);
+    lv_keyboard_set_mode(kbPlc, LV_KEYBOARD_MODE_NUMBER);
+    lv_obj_add_flag(kbPlc, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(kbPlc, my_event_cb_PlcKbHide, LV_EVENT_READY, NULL);
+    lv_obj_add_event_cb(kbPlc, my_event_cb_PlcKbHide, LV_EVENT_CANCEL, NULL);
+}
+
 void lv_CreateIPLabel(lv_obj_t * parent)
 {
     IPLabel = lv_label_create(parent); 
@@ -476,6 +639,14 @@ void InitUI(){
   ui_ScreenRelais = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(ui_ScreenRelais, lv_color_hex(0x090909), 0);
 
+  // 3eme ecran: configuration WiFi (SSID/mot de passe), accessible depuis l'ecran Relais
+  ui_ScreenWifi = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(ui_ScreenWifi, lv_color_hex(0x090909), 0);
+
+  // 4eme ecran: configuration de l'adresse IP du PLC, accessible depuis l'ecran Relais
+  ui_ScreenPLC = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(ui_ScreenPLC, lv_color_hex(0x090909), 0);
+
   // Statut com / horloge / alarme: zone commune, superposee a l'ecran actif quel qu'il
   // soit (lv_layer_top() est transparente hors des widgets qu'on y place).
   lv_CreateIPLabel(lv_layer_top());
@@ -505,6 +676,19 @@ void InitUI(){
   lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
   lv_obj_set_style_bg_color(btnRetour, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnRetour, lv_color_make(60, 60, 60), 0);
+
+  // Bouton d'acces a l'ecran de config WiFi, a cote du bouton Retour
+  lv_obj_t *btnWifi = createRelayButtonBase(ui_ScreenRelais, 130, 30, 120, 60, "WiFi >", &lblUnused, my_event_cb_GoWifiScreen);
+  lv_obj_set_style_bg_color(btnWifi, lv_color_make(60, 60, 60), 0);
+  lv_obj_set_style_bg_grad_color(btnWifi, lv_color_make(60, 60, 60), 0);
+
+  // Bouton d'acces a l'ecran de config adresse IP du PLC, a cote du bouton WiFi
+  lv_obj_t *btnPlc = createRelayButtonBase(ui_ScreenRelais, 260, 30, 120, 60, "PLC >", &lblUnused, my_event_cb_GoPLCScreen);
+  lv_obj_set_style_bg_color(btnPlc, lv_color_make(60, 60, 60), 0);
+  lv_obj_set_style_bg_grad_color(btnPlc, lv_color_make(60, 60, 60), 0);
+
+  lv_createScreenWifi(ui_ScreenWifi);
+  lv_createScreenPLC(ui_ScreenPLC);
 
   lv_scr_load(ui_ScreenMain);
 }

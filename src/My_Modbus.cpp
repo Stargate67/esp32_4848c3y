@@ -6,17 +6,51 @@
 #include "Globals.h"
 #include "My_Modbus.h"
 #include <ModbusIP_ESP8266.h>
+#include <Preferences.h>
 #include <map>
 
 #define NBAVGFIFO 29
 
 ModbusIP mb;
 
+// Adresse IP du PLC WAGO, mutable: valeur par defaut ecrasee par loadPLCAddress() si une
+// adresse a deja ete enregistree depuis l'ecran de configuration PLC (voir MainScreen.cpp).
+IPAddress MBremote(192, 168, 0, 105);
+
+static Preferences plcPrefs;
+
+// Lit l'adresse IP du PLC depuis la NVS (Preferences); si rien n'est enregistre (premier
+// boot), MBremote garde sa valeur par defaut ci-dessus.
+void loadPLCAddress(){
+  plcPrefs.begin("modbus", true);
+  String saved = plcPrefs.getString("plcip", "");
+  plcPrefs.end();
+  IPAddress addr;
+  if (saved.length() > 0 && addr.fromString(saved)) {
+    MBremote = addr;
+  }
+}
+
+// Enregistre la nouvelle adresse en NVS et l'applique immediatement: la machine a etats de
+// MainModbus() (case 0/99) reconnecte automatiquement des le prochain cycle, sans reboot.
+void applyPLCAddress(const IPAddress &newAddr){
+  MBremote = newAddr;
+  plcPrefs.begin("modbus", false);
+  plcPrefs.putString("plcip", MBremote.toString());
+  plcPrefs.end();
+}
+
 //unsigned long prevmillis1;
 unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
 //unsigned long TransactMillis1;    // Timeout Transaction
 
 int iState = 0;
+
+// Anti-blocage case 99: mb.connect() est un appel bloquant (TCP connect). Sans cette tempo,
+// une IP PLC injoignable ferait boucler case 0 <-> case 99 en tentant une connexion a chaque
+// passage (toutes les 10ms), gelant l'ecran tactile en continu. Meme pattern que TimerCheckWifi
+// dans main.cpp: on limite les tentatives a une toutes les 3s.
+Tempos TimerModbusReconnect(3000);
 
 volatile unsigned long g_case20DurationUs = 0; // Diagnostic temporaire: duree du dernier passage en case 20
 
@@ -413,10 +447,16 @@ void MainModbus() {
     break;
 
     case 99:
-    {     
+    {
       if (SERDEBUG) Serial.println(String(iState));
-      mb.connect(MBremote);
-      iState = 0;
+      // Ne retente une connexion que toutes les 3s (voir TimerModbusReconnect ci-dessus):
+      // mb.connect() bloque jusqu'a MODBUSIP_CONNECT_TIMEOUT (voir platformio.ini) si l'IP
+      // du PLC est injoignable, il ne faut donc pas l'appeler a chaque passage de la boucle.
+      if (TimerModbusReconnect.Q()) {
+        mb.connect(MBremote);
+        TimerModbusReconnect.Reset();
+        iState = 0;
+      }
     }
     break;
 

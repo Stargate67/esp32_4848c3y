@@ -9,3 +9,5 @@ extern volatile unsigned long g_case20DurationUs; // Duree mesuree du dernier pa
 
 float fnAverage(float fInput);
 void MainModbus();
+void loadPLCAddress();
+void applyPLCAddress(const IPAddress &newAddr);
