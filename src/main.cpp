@@ -155,6 +155,17 @@ void setup()
 
   InitUI();
 
+  // Diagnostic temporaire: verifie si le pool memoire LVGL (LV_MEM_SIZE, lib/lv_conf.h) est
+  // sature apres construction de tous les ecrans - a retirer une fois le blocage au 1er
+  // rendu (ecran noir apres "Recherche WIFI......") diagnostique.
+  {
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    Serial.printf("LVGL mem: used=%u%% frag=%u%% free_size=%u free_biggest=%u max_used=%u\n",
+                  mon.used_pct, mon.frag_pct, (unsigned)mon.free_size,
+                  (unsigned)mon.free_biggest_size, (unsigned)mon.max_used);
+  }
+
   startWifi();
   
   mb.client();

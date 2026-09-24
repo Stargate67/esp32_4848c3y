@@ -60,6 +60,24 @@ void Relays();
 void DisplayAlarms(uint16_t MBAlarm);
 void AcquitMesAlarme();
 
+// Alimente le buffer d'historique d'une mesure analogique (ecran Relais, graphique
+// selectionnable): un echantillon toutes les 10 min par mesure, voir
+// lv_createChartMeasure()/SampleMeasurementGraph() dans MainScreen.cpp. `key` doit
+// correspondre a une des cles de GRAPH_MEASUREMENTS (sinon l'appel est ignore).
+void SampleMeasurementGraph(const char *key, float value);
+
+// Resynchronise l'affichage de l'ecran de saisie de consigne (valeur jaune) sur gConsigneTemp
+// (valeur reellement relue du PLC), appelee a chaque cycle Modbus (voir case 20/
+// UpdateLVGLFromModbus() dans My_Modbus.cpp). Sans appel, il fallait quitter puis revenir sur
+// l'ecran pour forcer ce resync (seul my_event_cb_GoConsigneScreen le faisait). N'ecrase pas
+// une saisie +/- en cours (voir bConsigneDirty dans MainScreen.cpp).
+void RefreshConsigneDisplay();
+
+// Recalcule les etiquettes HH:MM (heure reelle glissante) de l'axe X du graphique de mesures
+// analogiques (ecran Relais). Voir MainScreen.cpp pour le detail; appelee a chaque cycle
+// Modbus au meme titre que RefreshConsigneDisplay().
+void UpdateGraphTimeAxis();
+
 extern bool bAcquitAlarme;
 extern int iState;
 extern ModbusIP mb;  //ModbusIP object
@@ -89,6 +107,16 @@ extern bool bRelay_5;
 
 extern IPAddress MBremote;   // Adresse IP du PLC WAGO, mutable: voir loadPLCAddress()/applyPLCAddress() dans My_Modbus.cpp
 void applyPLCAddress(const IPAddress &newAddr);
+
+// Consigne de temperature (bouton "Consigne" ecran Relais, rangee superieure): ecrite en INT
+// (x10, ex 205 = 20.5°C) sur le registre Modbus du %MW630 PLC, et relue en continu depuis ce
+// meme registre (case 5/20 dans My_Modbus.cpp): gConsigneTemp reflete donc toujours la valeur
+// reelle du PLC (avec ~1s de latence apres une ecriture), pas une simple copie locale. Voir
+// applyConsigneTemp() dans My_Modbus.cpp.
+extern float gConsigneTemp;
+void applyConsigneTemp(float newTemp);
+
+extern lv_obj_t * ui_LblValConsigneTemp;  // Valeur: consigne de temperature (bouton "Consigne", ecran Relais)
 
 extern lv_obj_t *btnR1Chaudiere;     // Bouton relais Chaudiere (ecran Relais)
 extern lv_obj_t *btnR2BoostCh;       // Bouton relais Boost Chaudiere (ecran Relais)

@@ -29,7 +29,6 @@ lv_obj_t * ui_Container2;   // Cadre "Temp mini du jour"
 lv_obj_t * ui_LblMinExt;    // Titre fixe "Min Ext."
 lv_obj_t * ui_Container3;   // Cadre "Temp maxi du jour"
 lv_obj_t * ui_LblMaxExt;    // Titre fixe "Max Ext."
-lv_obj_t * ui_Chart1;       // Non utilise actuellement
 
 // Voyants d'etat sur l'ecran principal, refletant l'etat des relais dont les boutons
 // de commande sont sur l'ecran Relais (mis a jour dans My_Modbus.cpp, case 20).
@@ -59,6 +58,68 @@ static lv_obj_t *kbWifi;
 
 static lv_obj_t *taPlcIp;
 static lv_obj_t *kbPlc;
+
+static lv_obj_t *ui_ScreenConsigne;  // Ecran de saisie de la consigne de temperature (%MW630), accessible depuis l'ecran Relais
+static lv_obj_t *lblConsigneValue;   // Grande valeur affichee sur l'ecran de saisie (pas encore validee)
+static float editConsigneTemp = 20.0; // Valeur en cours d'ajustement sur l'ecran de saisie (pas de step keyboard, +/- 0.5°C)
+// true entre un appui +/- et le prochain Valider (ou la sortie de l'ecran): empeche
+// RefreshConsigneDisplay() d'ecraser une saisie pas encore envoyee au PLC avec la valeur relue.
+static bool bConsigneDirty = false;
+// Derniere valeur reellement affichee par RefreshConsigneDisplay() (voir plus bas). Remise a
+// une sentinelle invalide a chaque sortie d'edition (Valider/ouverture ecran) pour forcer un
+// reaffichage meme si gConsigneTemp revient a la valeur d'avant edition (ex: PLC qui clampe la
+// saisie sur son ancienne consigne) - sinon le test d'egalite masque a tort le retour a cette
+// valeur et l'ecran reste fige sur le dernier chiffre tape.
+static float lastShownConsigne = -1000.0;
+
+constexpr float CONSIGNE_TEMP_MIN = 15.0;
+constexpr float CONSIGNE_TEMP_MAX = 25.0;
+constexpr float CONSIGNE_TEMP_STEP = 0.2;
+
+// Graphique de mesures analogiques (ecran Relais, entre les boutons du haut et la rangee
+// de boutons du bas). 144 points echantillonnes toutes les 10 min => 24h d'historique glissant.
+// Selection via une rangee fixe de petits boutons (chips) plutot qu'un dropdown: sur ce
+// panneau ST7701 (buffer plein-ecran unique en PSRAM, voir commentaire dans My_Modbus.cpp),
+// ouvrir la liste deroulante d'un dropdown cree un gros objet a la volee et invalide tout
+// l'ecran d'un coup, ce qui bloquait l'affichage plusieurs secondes au toucher. Des boutons
+// fixes, jamais crees/detruits, n'ont pas ce cout. Chaque mesure a son propre buffer
+// (graphBuffers[]) alimente en continu par SampleMeasurementGraph() (appelee depuis
+// UpdateLVGLFromModbus() dans My_Modbus.cpp), donc changer de selection ne perd pas l'historique.
+#define GRAPH_POINTS 144
+#define GRAPH_SAMPLE_INTERVAL_MS (10UL * 60UL * 1000UL)
+
+struct GraphMeasurement {
+    const char *key;        // cle brute dans ModbusDisplayValues (voir My_Modbus.cpp, case 20)
+    const char *label;      // libelle complet (reference/debug)
+    const char *shortLabel; // libelle affiche sur le bouton de selection
+    int32_t rangeMin, rangeMax;
+};
+
+// Consigne/Debit/Courant retires: un point toutes les 10 min n'a pas de sens pour ces valeurs
+// (variations trop rapides ou trop rares pour etre lisibles sur un historique aussi lache).
+static const GraphMeasurement GRAPH_MEASUREMENTS[] = {
+    {"TempExtRaw",      "Temp. exterieure",         "Ext",      -10, 40},
+    {"TempSalonRaw",    "Temp. salon",              "Salon",      10, 30},
+    {"TempPlancherRaw", "Temp. plancher chauffant", "Plancher",    0, 50},
+    {"TempECSRaw",      "Temp. ECS",                "ECS",         0, 80},
+    {"TempRadiatRaw",   "Temp. radiateur",          "Radiat",      0, 80},
+};
+#define GRAPH_MEASUREMENT_COUNT ((int)(sizeof(GRAPH_MEASUREMENTS) / sizeof(GRAPH_MEASUREMENTS[0])))
+
+static int32_t graphBuffers[GRAPH_MEASUREMENT_COUNT][GRAPH_POINTS];
+static int graphSelected = 0;
+static lv_obj_t *ui_ChartMeasure;
+static lv_obj_t *ui_ScaleY; // echelle verticale (valeurs), plage mise a jour avec la mesure selectionnee
+static lv_obj_t *ui_ScaleX; // echelle horizontale (heure glissante HH:MM), voir UpdateGraphTimeAxis()
+static lv_chart_series_t *serMeasure;
+static lv_obj_t *chipMeasure[GRAPH_MEASUREMENT_COUNT];
+// 5 etiquettes HH:MM (24h/18h/12h/6h/0h avant maintenant) + sentinelle NULL requise par
+// lv_scale_set_text_src(). lv_scale ne fait que stocker le pointeur du tableau: les buffers
+// doivent donc rester statiques et sont mis a jour en place (voir UpdateGraphTimeAxis()).
+static char timeAxisBuf[5][6];
+static const char *timeAxisSrc[6] = {
+    timeAxisBuf[0], timeAxisBuf[1], timeAxisBuf[2], timeAxisBuf[3], timeAxisBuf[4], nullptr
+};
 
 //************************************************************************************************************/
 //============================================================================================================/
@@ -218,6 +279,70 @@ static void my_event_cb_PlcSave(lv_event_t *e){
             applyPLCAddress(addr);
         }
     }
+}
+
+// Ouvre l'ecran de saisie de consigne, initialise sur la valeur reellement lue du PLC
+// (gConsigneTemp, resynchronisee en continu dans My_Modbus.cpp) et non sur une valeur en
+// cache: on repart toujours de l'etat reel de l'installation, pas d'une saisie oubliee.
+static void my_event_cb_GoConsigneScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        bConsigneDirty = false;
+        editConsigneTemp = gConsigneTemp;
+        lv_label_set_text(lblConsigneValue, (String(editConsigneTemp, 1) + " °C").c_str());
+        lv_scr_load(ui_ScreenConsigne);
+    }
+}
+
+static void my_event_cb_BackFromConsigneScreen(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        lv_scr_load(ui_ScreenRelais);
+    }
+}
+
+static void my_event_cb_ConsigneMinus(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        bConsigneDirty = true;
+        editConsigneTemp -= CONSIGNE_TEMP_STEP;
+        if (editConsigneTemp < CONSIGNE_TEMP_MIN) editConsigneTemp = CONSIGNE_TEMP_MIN;
+        lv_label_set_text(lblConsigneValue, (String(editConsigneTemp, 1) + " °C").c_str());
+    }
+}
+
+static void my_event_cb_ConsignePlus(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        bConsigneDirty = true;
+        editConsigneTemp += CONSIGNE_TEMP_STEP;
+        if (editConsigneTemp > CONSIGNE_TEMP_MAX) editConsigneTemp = CONSIGNE_TEMP_MAX;
+        lv_label_set_text(lblConsigneValue, (String(editConsigneTemp, 1) + " °C").c_str());
+    }
+}
+
+// Valide et envoie la nouvelle consigne au PLC (voir applyConsigneTemp() dans My_Modbus.cpp).
+// bConsigneDirty retombe a false ici: RefreshConsigneDisplay() reprend la main et affiche la
+// valeur reellement relue du PLC des le prochain cycle Modbus, sans qu'il faille quitter et
+// revenir sur l'ecran pour forcer ce resync.
+static void my_event_cb_ConsigneSave(lv_event_t *e){
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+        bConsigneDirty = false;
+        // Sentinelle invalide: force RefreshConsigneDisplay() a reafficher la valeur reellement
+        // relue du PLC au prochain cycle, meme si le PLC clampe la saisie sur l'ancienne
+        // consigne (auquel cas gConsigneTemp reviendrait a une valeur egale a l'ancien cache).
+        lastShownConsigne = -1000.0;
+        applyConsigneTemp(editConsigneTemp);
+    }
+}
+
+// Resynchronise la valeur jaune de l'ecran de saisie sur gConsigneTemp (valeur reellement
+// relue du PLC): appelee a chaque cycle Modbus (voir UpdateLVGLFromModbus() dans
+// My_Modbus.cpp), pas seulement a l'ouverture de l'ecran. N'ecrase rien tant qu'une saisie
+// +/- est en cours (bConsigneDirty), pour ne pas faire sauter la valeur sous le doigt de
+// l'utilisateur avant qu'il ait appuye sur Valider.
+void RefreshConsigneDisplay(){
+    if (bConsigneDirty) return;
+    if (gConsigneTemp == lastShownConsigne) return;
+    lastShownConsigne = gConsigneTemp;
+    editConsigneTemp = gConsigneTemp;
+    lv_label_set_text(lblConsigneValue, (String(editConsigneTemp, 1) + " °C").c_str());
 }
 
 static void my_event_cb_AcqAlarmes (lv_event_t *e){
@@ -476,30 +601,187 @@ void lv_createStatusLeds(lv_obj_t *parent){
     ledArriveeEau = createStatusLed(parent, xB, y2, colW, rowH, "Eau");
 }
 
+// Les 5 boutons d'action sont alignes sur une seule rangee carree en bas de l'ecran Relais
+// (voir REL_BTN_* ci-dessous), ce qui libere l'espace au-dessus pour lv_createChartMeasure().
+#define REL_BTN_SIZE 96
+#define REL_BTN_Y (480 - REL_BTN_SIZE)
+
 void lv_createButton_CHAUD(lv_obj_t *parent){
-    btnR1Chaudiere = createRelayButtonBase(parent, 0, 360, 120, 120, "Chaud", &lblBtnR1Chaudiere, my_event_cb_R1Chaudiere);
+    btnR1Chaudiere = createRelayButtonBase(parent, 0 * REL_BTN_SIZE, REL_BTN_Y, REL_BTN_SIZE, REL_BTN_SIZE, "Chaud", &lblBtnR1Chaudiere, my_event_cb_R1Chaudiere);
     lblBtnR1small = createRelaySmallLabel(btnR1Chaudiere, "R1=0");
 }
 
 void lv_createButton_BOOSTCh(lv_obj_t *parent){
-    btnR2BoostCh = createRelayButtonBase(parent, 120, 360, 120, 120, "Boost", &lblBtnR2BoostCh, my_event_cb_R2BoostCh);
+    btnR2BoostCh = createRelayButtonBase(parent, 1 * REL_BTN_SIZE, REL_BTN_Y, REL_BTN_SIZE, REL_BTN_SIZE, "Boost", &lblBtnR2BoostCh, my_event_cb_R2BoostCh);
     lblBtnR2small = createRelaySmallLabel(btnR2BoostCh, "R2=0");
 }
 
 void lv_createButton_RADIAT(lv_obj_t *parent){
-    btnR3PpeRadiateur = createRelayButtonBase(parent, 240, 360, 120, 120, "Radiat", &lblBtnR3PpeRadiateur, my_event_cb_R3PpeRadiateur);
+    btnR3PpeRadiateur = createRelayButtonBase(parent, 2 * REL_BTN_SIZE, REL_BTN_Y, REL_BTN_SIZE, REL_BTN_SIZE, "Radiat", &lblBtnR3PpeRadiateur, my_event_cb_R3PpeRadiateur);
     lblBtnR3small = createRelaySmallLabel(btnR3PpeRadiateur, "R3=0");
 }
 
 void lv_createButton_PLANCHER(lv_obj_t *parent){
-    btnPpePlancher = createRelayButtonBase(parent, 360, 360, 120, 120, "Plancher", &lblBtnPpePlancher, my_event_cb_PpePlancher);
+    btnPpePlancher = createRelayButtonBase(parent, 3 * REL_BTN_SIZE, REL_BTN_Y, REL_BTN_SIZE, REL_BTN_SIZE, "Plancher", &lblBtnPpePlancher, my_event_cb_PpePlancher);
     lv_obj_set_style_bg_color(btnPpePlancher, lv_color_make( 120, 120, 120 ), 0 );
 }
 
 void lv_createButton_ArriveeEau(lv_obj_t *parent){
-    btnArriveeEau = createRelayButtonBase(parent, 360, 250, 120, 110, "Arrivee\nEau", &lblBtnArriveeEau, my_event_cb_ArriveeEau);
+    btnArriveeEau = createRelayButtonBase(parent, 4 * REL_BTN_SIZE, REL_BTN_Y, REL_BTN_SIZE, REL_BTN_SIZE, "Arrivee\nEau", &lblBtnArriveeEau, my_event_cb_ArriveeEau);
     lv_obj_set_style_bg_color(btnArriveeEau, lv_color_make( 120, 120, 120 ), 0 );
     lv_obj_set_style_text_align(lblBtnArriveeEau, LV_TEXT_ALIGN_CENTER, 0);
+}
+
+// Recalcule les etiquettes HH:MM de l'axe X du graphique (fenetre glissante de 24h, un point
+// tous les 10 min): a rappeler regulierement puisque "maintenant" avance en continu (voir
+// UpdateLVGLFromModbus() dans My_Modbus.cpp). Necessite l'horloge synchronisee (getLocalTime()
+// dans main.cpp) ; ne fait rien tant que ce n'est pas le cas, les buffers gardent alors leur
+// dernier contenu (vide au tout premier appel, avant synchro NTP).
+void UpdateGraphTimeAxis(){
+    if (!ui_ScaleX) return;
+    time_t now = time(nullptr);
+    if (now < 8 * 3600L * 365L) return; // epoch proche de 0: horloge pas encore synchronisee
+    for (int i = 0; i < 5; i++){
+        time_t t = now - (4 - i) * 6L * 3600L;
+        struct tm ti;
+        localtime_r(&t, &ti);
+        strftime(timeAxisBuf[i], sizeof(timeAxisBuf[i]), "%H:%M", &ti);
+    }
+    lv_obj_invalidate(ui_ScaleX);
+}
+
+// Met en surbrillance le chip de la mesure actuellement affichee sur le graphique.
+static void updateMeasureChipHighlight(){
+    for (int m = 0; m < GRAPH_MEASUREMENT_COUNT; m++){
+        bool sel = (m == graphSelected);
+        lv_obj_set_style_bg_color(chipMeasure[m], sel ? lv_color_hex(0xC2ED34) : lv_color_make(60, 60, 60), 0);
+        lv_obj_set_style_text_color(chipMeasure[m], sel ? lv_color_black() : lv_color_white(), 0);
+    }
+}
+
+// Callback chip: change la mesure affichee sur le graphique. Chaque mesure a son propre
+// buffer (graphBuffers[]), deja alimente en continu par SampleMeasurementGraph(): pas de perte
+// d'historique en changeant de selection, juste un ré-affichage (lv_chart_set_ext_y_array).
+static void my_event_cb_MeasureSelect(lv_event_t *e){
+    int idx = (int)(intptr_t)lv_event_get_user_data(e);
+    graphSelected = idx;
+    const GraphMeasurement &m = GRAPH_MEASUREMENTS[idx];
+    lv_chart_set_range(ui_ChartMeasure, LV_CHART_AXIS_PRIMARY_Y, m.rangeMin, m.rangeMax);
+    lv_scale_set_range(ui_ScaleY, m.rangeMin, m.rangeMax);
+    lv_chart_set_ext_y_array(ui_ChartMeasure, serMeasure, graphBuffers[idx]);
+    lv_chart_refresh(ui_ChartMeasure);
+    updateMeasureChipHighlight();
+}
+
+// Cree la rangee de chips de selection + le graphique de mesures analogiques, dans l'espace
+// libre entre les boutons du haut (< Retour/WiFi/PLC, bas a y=90) et la rangee de boutons du
+// bas (5 boutons carres, haut a REL_BTN_Y, voir REL_BTN_SIZE ci-dessus).
+void lv_createChartMeasure(lv_obj_t *parent){
+    for (int m = 0; m < GRAPH_MEASUREMENT_COUNT; m++){
+        for (int i = 0; i < GRAPH_POINTS; i++) graphBuffers[m][i] = LV_CHART_POINT_NONE;
+    }
+
+    // Une seule rangee: GRAPH_MEASUREMENT_COUNT mesures tiennent sur 460px de large.
+    const lv_coord_t chipGap = 4, chipH = 28;
+    const lv_coord_t chipW = (460 - (GRAPH_MEASUREMENT_COUNT - 1) * chipGap) / GRAPH_MEASUREMENT_COUNT;
+    const lv_coord_t chipsTop = 91; // 1px sous le bas des boutons du haut (y=30, hauteur 60 => bas a y=90)
+    for (int m = 0; m < GRAPH_MEASUREMENT_COUNT; m++){
+        lv_obj_t *chip = lv_btn_create(parent);
+        lv_obj_set_size(chip, chipW, chipH);
+        lv_obj_set_pos(chip, 10 + m * (chipW + chipGap), chipsTop);
+        lv_obj_t *lbl = lv_label_create(chip);
+        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
+        lv_label_set_text(lbl, GRAPH_MEASUREMENTS[m].shortLabel);
+        lv_obj_center(lbl);
+        lv_obj_add_event_cb(chip, my_event_cb_MeasureSelect, LV_EVENT_CLICKED, (void*)(intptr_t)m);
+        chipMeasure[m] = chip;
+    }
+    updateMeasureChipHighlight();
+
+    const lv_coord_t chartTop = chipsTop + chipH + chipGap + 4; // sous l'unique rangee de chips
+    // Echelle X (temps, en heures avant maintenant): 144 points / 10 min = 24h d'historique fixe
+    // (voir GRAPH_SAMPLE_INTERVAL_MS), donc une plage -24..0 constante, pas de mise a jour requise.
+    const lv_coord_t scaleYW = 34, scaleXH = 16, gap = 2;
+    const lv_coord_t chartLeft = 10 + scaleYW + gap;
+    const lv_coord_t chartW = 460 - scaleYW - gap;
+    const lv_coord_t chartH = REL_BTN_Y - chartTop - 8 - scaleXH - gap;
+
+    ui_ScaleY = lv_scale_create(parent);
+    lv_obj_set_pos(ui_ScaleY, 10, chartTop);
+    lv_obj_set_size(ui_ScaleY, scaleYW, chartH);
+    lv_scale_set_mode(ui_ScaleY, LV_SCALE_MODE_VERTICAL_LEFT);
+    lv_scale_set_range(ui_ScaleY, GRAPH_MEASUREMENTS[0].rangeMin, GRAPH_MEASUREMENTS[0].rangeMax);
+    lv_scale_set_total_tick_count(ui_ScaleY, 6);
+    lv_scale_set_major_tick_every(ui_ScaleY, 1);
+    lv_obj_set_style_text_font(ui_ScaleY, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(ui_ScaleY, lv_color_make(180, 180, 180), 0);
+    lv_obj_set_style_line_color(ui_ScaleY, lv_color_make(80, 80, 80), 0);
+    lv_obj_set_style_length(ui_ScaleY, 5, LV_PART_INDICATOR);
+    lv_obj_set_style_length(ui_ScaleY, 3, LV_PART_ITEMS);
+
+    ui_ScaleX = lv_scale_create(parent);
+    lv_obj_set_pos(ui_ScaleX, chartLeft, chartTop + chartH + gap);
+    lv_obj_set_size(ui_ScaleX, chartW, scaleXH);
+    lv_scale_set_mode(ui_ScaleX, LV_SCALE_MODE_HORIZONTAL_BOTTOM);
+    lv_scale_set_range(ui_ScaleX, 0, 4); // 5 positions, voir timeAxisSrc (index 0=-24h ... 4=maintenant)
+    lv_scale_set_total_tick_count(ui_ScaleX, 5);
+    lv_scale_set_major_tick_every(ui_ScaleX, 1);
+    lv_scale_set_text_src(ui_ScaleX, timeAxisSrc);
+    lv_obj_set_style_text_font(ui_ScaleX, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(ui_ScaleX, lv_color_make(180, 180, 180), 0);
+    lv_obj_set_style_line_color(ui_ScaleX, lv_color_make(80, 80, 80), 0);
+    lv_obj_set_style_length(ui_ScaleX, 5, LV_PART_INDICATOR);
+    lv_obj_set_style_length(ui_ScaleX, 3, LV_PART_ITEMS);
+    UpdateGraphTimeAxis();
+
+    ui_ChartMeasure = lv_chart_create(parent);
+    lv_obj_set_pos(ui_ChartMeasure, chartLeft, chartTop);
+    lv_obj_set_size(ui_ChartMeasure, chartW, chartH);
+    lv_obj_set_style_bg_color(ui_ChartMeasure, lv_color_hex(0x1a1a1a), 0);
+    lv_obj_set_style_border_color(ui_ChartMeasure, lv_color_make(60, 60, 60), 0);
+    lv_obj_set_style_line_color(ui_ChartMeasure, lv_color_make(40, 40, 40), LV_PART_MAIN);
+
+    lv_chart_set_type(ui_ChartMeasure, LV_CHART_TYPE_LINE);
+    lv_chart_set_point_count(ui_ChartMeasure, GRAPH_POINTS);
+    lv_chart_set_range(ui_ChartMeasure, LV_CHART_AXIS_PRIMARY_Y, GRAPH_MEASUREMENTS[0].rangeMin, GRAPH_MEASUREMENTS[0].rangeMax);
+    lv_chart_set_div_line_count(ui_ChartMeasure, 4, 4);
+    // Pas de gros points sur chaque echantillon: seule la courbe est utile ici.
+    lv_obj_set_style_width(ui_ChartMeasure, 0, LV_PART_INDICATOR);
+    lv_obj_set_style_height(ui_ChartMeasure, 0, LV_PART_INDICATOR);
+
+    serMeasure = lv_chart_add_series(ui_ChartMeasure, lv_color_hex(0xC2ED34), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_set_ext_y_array(ui_ChartMeasure, serMeasure, graphBuffers[0]);
+}
+
+// Recherche l'index de la mesure correspondant a une cle de ModbusDisplayValues (voir
+// My_Modbus.cpp, case 20). Retourne -1 si la cle ne correspond a aucune mesure graphable.
+static int findGraphMeasurementIndex(const char *key){
+    for (int m = 0; m < GRAPH_MEASUREMENT_COUNT; m++){
+        if (strcmp(GRAPH_MEASUREMENTS[m].key, key) == 0) return m;
+    }
+    return -1;
+}
+
+// Ajoute un echantillon au buffer d'une mesure, au plus une fois toutes les
+// GRAPH_SAMPLE_INTERVAL_MS (voir UpdateLVGLFromModbus() dans My_Modbus.cpp, appelee ~1/s).
+// Toutes les mesures sont echantillonnees en continu (pas seulement celle affichee), pour
+// ne jamais perdre d'historique en changeant de selection dans le dropdown.
+void SampleMeasurementGraph(const char *key, float value){
+    int idx = findGraphMeasurementIndex(key);
+    if (idx < 0) return;
+
+    static unsigned long lastRound[GRAPH_MEASUREMENT_COUNT] = {0};
+    static bool sampled[GRAPH_MEASUREMENT_COUNT] = {false};
+    unsigned long sampleRound = millis() / GRAPH_SAMPLE_INTERVAL_MS;
+    if (sampled[idx] && sampleRound == lastRound[idx]) return;
+    lastRound[idx] = sampleRound;
+    sampled[idx] = true;
+
+    int32_t *buf = graphBuffers[idx];
+    memmove(&buf[0], &buf[1], (GRAPH_POINTS - 1) * sizeof(int32_t));
+    buf[GRAPH_POINTS - 1] = (int32_t)roundf(value);
+
+    if (idx == graphSelected) lv_chart_refresh(ui_ChartMeasure);
 }
 
 // Cree un ecran de configuration WiFi: 2 champs (SSID en clair, mot de passe masque),
@@ -585,6 +867,40 @@ void lv_createScreenPLC(lv_obj_t *parent){
     lv_obj_add_event_cb(kbPlc, my_event_cb_PlcKbHide, LV_EVENT_CANCEL, NULL);
 }
 
+// Cree l'ecran de saisie de la consigne de temperature (%MW630): pas de clavier, juste un
+// stepper +/- 0.2°C (plage 15.0-25.0°C) - plus sur et plus simple qu'un clavier pour une plage
+// aussi etroite, et ca evite un widget de plus a gerer sur ce panneau (voir commentaire sur les
+// chips de lv_createChartMeasure() plus haut au sujet du cout des invalidations larges).
+void lv_createScreenConsigne(lv_obj_t *parent){
+    lv_obj_t *lblTitle = lv_label_create(parent);
+    lv_label_set_text(lblTitle, "Consigne de temperature");
+    lv_obj_set_style_text_color(lblTitle, lv_color_white(), 0);
+    lv_obj_set_style_text_font(lblTitle, &lv_font_montserrat_20, 0);
+    lv_obj_set_pos(lblTitle, 20, 110);
+
+    lblConsigneValue = lv_label_create(parent);
+    lv_label_set_text(lblConsigneValue, "20.0 °C");
+    lv_obj_set_style_text_color(lblConsigneValue, lv_color_hex(0xC2ED34), 0);
+    lv_obj_set_style_text_font(lblConsigneValue, &lv_font_montserrat_40, 0);
+    lv_obj_align(lblConsigneValue, LV_ALIGN_TOP_MID, 0, 160);
+
+    lv_obj_t *lblUnused;
+    lv_obj_t *btnMinus = createRelayButtonBase(parent, 90, 250, 80, 80, "-", &lblUnused, my_event_cb_ConsigneMinus);
+    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_40, 0);
+
+    lv_obj_t *btnPlus = createRelayButtonBase(parent, 310, 250, 80, 80, "+", &lblUnused, my_event_cb_ConsignePlus);
+    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_40, 0);
+    (void)btnMinus; (void)btnPlus;
+
+    lv_obj_t *btnSave = createRelayButtonBase(parent, 180, 250, 120, 80, "Valider", &lblUnused, my_event_cb_ConsigneSave);
+    lv_obj_set_style_bg_color(btnSave, lv_color_make(0, 120, 40), 0);
+    lv_obj_set_style_bg_grad_color(btnSave, lv_color_make(0, 120, 40), 0);
+
+    lv_obj_t *btnBack = createRelayButtonBase(parent, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackFromConsigneScreen);
+    lv_obj_set_style_bg_color(btnBack, lv_color_make(60, 60, 60), 0);
+    lv_obj_set_style_bg_grad_color(btnBack, lv_color_make(60, 60, 60), 0);
+}
+
 void lv_CreateIPLabel(lv_obj_t * parent)
 {
     IPLabel = lv_label_create(parent); 
@@ -647,6 +963,10 @@ void InitUI(){
   ui_ScreenPLC = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(ui_ScreenPLC, lv_color_hex(0x090909), 0);
 
+  // 5eme ecran: saisie de la consigne de temperature (%MW630), accessible depuis l'ecran Relais
+  ui_ScreenConsigne = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(ui_ScreenConsigne, lv_color_hex(0x090909), 0);
+
   // Statut com / horloge / alarme: zone commune, superposee a l'ecran actif quel qu'il
   // soit (lv_layer_top() est transparente hors des widgets qu'on y place).
   lv_CreateIPLabel(lv_layer_top());
@@ -660,6 +980,7 @@ void InitUI(){
   lv_createButton_RADIAT(ui_ScreenRelais);
   lv_createButton_PLANCHER(ui_ScreenRelais);
   lv_createButton_ArriveeEau(ui_ScreenRelais);
+  lv_createChartMeasure(ui_ScreenRelais);
 
   // Voyants d'etat des relais, visibles sans quitter l'ecran principal
   lv_createStatusLeds(ui_ScreenMain);
@@ -687,8 +1008,23 @@ void InitUI(){
   lv_obj_set_style_bg_color(btnPlc, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnPlc, lv_color_make(60, 60, 60), 0);
 
+  // Bouton d'acces a l'ecran de saisie de consigne, a cote du bouton PLC. Affiche en
+  // permanence la valeur relue du PLC (ui_LblValConsigneTemp, mis a jour dans My_Modbus.cpp)
+  // sous le titre statique, pas besoin d'ouvrir l'ecran pour la consulter.
+  lv_obj_t *lblConsigneTitle;
+  lv_obj_t *btnConsigne = createRelayButtonBase(ui_ScreenRelais, 390, 30, 90, 60, "Consigne", &lblConsigneTitle, my_event_cb_GoConsigneScreen);
+  lv_obj_set_style_bg_color(btnConsigne, lv_color_make(60, 60, 60), 0);
+  lv_obj_set_style_bg_grad_color(btnConsigne, lv_color_make(60, 60, 60), 0);
+  lv_obj_align(lblConsigneTitle, LV_ALIGN_TOP_MID, 0, 4);
+  lv_obj_set_style_text_font(lblConsigneTitle, &lv_font_montserrat_12, 0);
+  ui_LblValConsigneTemp = lv_label_create(btnConsigne);
+  lv_label_set_text(ui_LblValConsigneTemp, "--.- °C");
+  lv_obj_set_style_text_font(ui_LblValConsigneTemp, &lv_font_montserrat_12, 0);
+  lv_obj_align(ui_LblValConsigneTemp, LV_ALIGN_BOTTOM_MID, 0, -4);
+
   lv_createScreenWifi(ui_ScreenWifi);
   lv_createScreenPLC(ui_ScreenPLC);
+  lv_createScreenConsigne(ui_ScreenConsigne);
 
   lv_scr_load(ui_ScreenMain);
 }

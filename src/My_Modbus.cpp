@@ -40,6 +40,32 @@ void applyPLCAddress(const IPAddress &newAddr){
   plcPrefs.end();
 }
 
+// Registre Modbus du %MW630 (INT PLC, valeur x10): documentation PLC "412919 => %MW630 =>
+// CONSIGNE T° SALON en 1/10", convention Modicon standard (adresse = numero documente -
+// 400001), soit 412919 - 400001 = 12918. Confirme sur site le 2026-09-24 (lecture affichait
+// 18.2 avec l'ancienne adresse 12919 alors que la consigne reelle etait a son minimum 16.0).
+// Ce registre est aussi relu en continu (case 5/20 ci-dessous) pour que le bouton "Consigne"
+// affiche toujours la vraie valeur du PLC, jamais une simple copie locale de la derniere ecriture.
+constexpr uint16_t REG_CONSIGNE_TEMP = 12918;  // %MW630
+constexpr uint16_t NB_REGS_CONSIGNE = 1;
+
+uint16_t MBresultConsigne[NB_REGS_CONSIGNE];  // Lecture du registre de consigne (%MW630)
+
+float gConsigneTemp = 20.0;  // Valeur affichee: resynchronisee sur la lecture PLC a chaque cycle (case 20)
+
+uint16_t mbWriteHregAddress;  // Adresse holding register a ecrire au prochain cycle (0 = rien a ecrire)
+uint16_t mbWriteHregValue;    // Valeur a ecrire (INT PLC, x10: 205 = 20.5°C)
+
+// Programme l'ecriture de la nouvelle consigne (%MW630): la machine a etats de MainModbus()
+// (case 0/95) l'envoie au PLC des le prochain cycle. gConsigneTemp est mis a jour ici pour un
+// retour visuel immediat sur l'ecran de saisie, puis resynchronise sur la valeur reellement
+// relue du PLC des le cycle de lecture suivant (~1s, voir MB_READ_INTERVAL).
+void applyConsigneTemp(float newTemp){
+  gConsigneTemp = newTemp;
+  mbWriteHregValue = (uint16_t)(int16_t)lround(newTemp * 10.0);
+  mbWriteHregAddress = REG_CONSIGNE_TEMP;
+}
+
 //unsigned long prevmillis1;
 unsigned long LastModbusRequest;  // Variable to track the last Modbus request time
 //unsigned long TransactMillis1;    // Timeout Transaction
@@ -82,6 +108,7 @@ lv_obj_t * ui_LblValECS;           // Temperature ballon eau chaude sanitaire
 lv_obj_t * ui_LblValRadiat;        // Temperature radiateur
 lv_obj_t * ui_LblValDebitRadit;    // Debit du circuit radiateur
 lv_obj_t * ui_LblValCourant;       // Courant electrique consomme
+lv_obj_t * ui_LblValConsigneTemp;  // Consigne de temperature (bouton "Consigne", ecran Relais)
 
 lv_obj_t * ui_LblValConsoInstEau;   // Consommation eau instantanee
 lv_obj_t * ui_LblValConsoInstElec;  // Consommation electrique instantanee
@@ -186,6 +213,14 @@ static void UpdateLVGLFromModbus(const ModbusDisplayValues &v) {
   setLabelTextIfChanged(ui_LblTempExt, get(v, "TempExt"));
   setLabelTextIfChanged(ui_LblDate, sDateDDMMYYYY);
 
+  // --- Graphique selectionnable (ecran Relais): echantillonne toutes les mesures en continu,
+  // voir GRAPH_MEASUREMENTS/SampleMeasurementGraph() dans MainScreen.cpp ---
+  SampleMeasurementGraph("TempExtRaw", rTempExt);
+  SampleMeasurementGraph("TempSalonRaw", get(v, "TempSalonRaw").toFloat());
+  SampleMeasurementGraph("TempPlancherRaw", get(v, "TempPlancherRaw").toFloat());
+  SampleMeasurementGraph("TempECSRaw", get(v, "TempECSRaw").toFloat());
+  SampleMeasurementGraph("TempRadiatRaw", get(v, "TempRadiatRaw").toFloat());
+
   // --- Couleur + labels Min/Max selon tendance de la Temp ext. ---
   lv_color_t colorMin = lv_color_hex(0x00FFFF);
   lv_color_t colorMax = lv_color_hex(0x00FFFF);
@@ -213,6 +248,9 @@ static void UpdateLVGLFromModbus(const ModbusDisplayValues &v) {
   setLabelTextIfChanged(ui_LblValRadiat, get(v, "TempRadiat"));
   setLabelTextIfChanged(ui_LblValDebitRadit, get(v, "DebitRadiat"));
   setLabelTextIfChanged(ui_LblValCourant, get(v, "Courant"));
+  setLabelTextIfChanged(ui_LblValConsigneTemp, get(v, "ConsigneTemp"));
+  RefreshConsigneDisplay(); // Ecran de saisie (valeur jaune): meme resync, sans devoir quitter/revenir
+  UpdateGraphTimeAxis();    // Etiquettes HH:MM de l'axe X du graphique (heure glissante)
 
   // --- Consommations instantanees Eau/Elec/Gaz ---
   setLabelTextIfChanged(ui_LblValConsoInstEau, get(v, "ConsoInstEau"));
@@ -266,10 +304,12 @@ void MainModbus() {
     case 0:
     {
       if (SERDEBUG) Serial.println(String(iState));
-      if (mb.isConnected(MBremote)) {  
+      if (mb.isConnected(MBremote)) {
         // Si demande d'ecriture Modbus Coil on passe à l'etape 90
         if (mbWriteCoilAddress) {
           iState = 90;
+        } else if (mbWriteHregAddress) {
+          iState = 95;
         } else {
           // Lecture Modbus en continue
           iState = 5;
@@ -285,6 +325,7 @@ void MainModbus() {
       // Read holding registers from Modbus Slave
       mb.readHreg(MBremote, START_REG, MBresultANA1, NB_REGS, nullptr, 1);
       mb.readHreg(MBremote, START_REG_ANIM, MBresultANIM1, NB_REGS_ANIM, nullptr, 1);
+      mb.readHreg(MBremote, REG_CONSIGNE_TEMP, MBresultConsigne, NB_REGS_CONSIGNE, nullptr, 1);
 
       iState = 20;
       if (SERDEBUG) Serial.println("iState="+String(iState));
@@ -353,6 +394,20 @@ void MainModbus() {
       String sConsoGazJ = String(MBresultANA1[23]/100.0, 2);
       String sConsoGazJ1 = String(MBresultANA1[24]/100.0, 2) + " Nm3";
 
+      // Consigne de temperature (%MW630): resynchronise gConsigneTemp sur la valeur reelle du
+      // PLC a chaque cycle (voir applyConsigneTemp() plus haut pour le detail du pourquoi).
+      gConsigneTemp = MBresultConsigne[0] / 10.0;
+      {
+        // Diagnostic temporaire: valeur brute du registre lue en Serial (contourne tout cache
+        // d'affichage LVGL), pour verifier si le PLC clampe reellement la consigne ecrite.
+        static uint16_t lastRawConsigne = 0xFFFF;
+        if (MBresultConsigne[0] != lastRawConsigne) {
+          lastRawConsigne = MBresultConsigne[0];
+          Serial.printf("[Consigne] registre brut=%u -> %.1f C\n", MBresultConsigne[0], gConsigneTemp);
+        }
+      }
+      String sConsigneTemp = String(gConsigneTemp, 1) + " °C";
+
       //if (SERDEBUG) Serial.println("sTempPlancher " + sTempPlancher);
       //if (SERDEBUG) Serial.println("TempECS " + sTempECS);
       //if (SERDEBUG) Serial.println("Courant " + sCourant);
@@ -388,6 +443,14 @@ void MainModbus() {
       v["ConsoJ1Eau"] = String(iConsoEauJ1) + " L";
       v["ConsoJ1Elec"] = String(iConsoElecJ1) + " Kwh";
       v["ConsoJ1Gaz"] = sConsoGazJ1;
+      v["ConsigneTemp"] = sConsigneTemp;
+
+      // Valeurs brutes pour le graphique selectionnable (ecran Relais): voir GRAPH_MEASUREMENTS
+      // dans MainScreen.cpp, ces cles doivent correspondre a celles utilisees la-bas.
+      v["TempSalonRaw"] = String(MBresultANA1[0] / 10.0, 4);
+      v["TempPlancherRaw"] = String(MBresultANA1[1] / 10.0, 4);
+      v["TempECSRaw"] = String(MBresultANA1[2] / 10.0, 4);
+      v["TempRadiatRaw"] = String(MBresultANA1[5] / 10.0, 4);
 
       UpdateLVGLFromModbus(v);
 
@@ -425,6 +488,8 @@ void MainModbus() {
     {     // Wait MB_READ_INTERVAL sec OR process Write modbus
       if (mbWriteCoilAddress) {
         iState = 90;
+      } else if (mbWriteHregAddress) {
+        iState = 95;
       }
       if (millis() - LastModbusRequest >= MB_READ_INTERVAL) {
         LastModbusRequest = millis();
@@ -442,6 +507,15 @@ void MainModbus() {
       if (SERDEBUG) Serial.println(String(iState));
       mb.writeCoil(MBremote, mbWriteCoilAddress, 1, nullptr, 1);
       mbWriteCoilAddress = 0;
+      iState = 0;
+    }
+    break;
+
+    case 95:
+    {     // Ecriture Modbus: consigne de temperature (%MW630, voir applyConsigneTemp())
+      if (SERDEBUG) Serial.println(String(iState));
+      mb.writeHreg(MBremote, mbWriteHregAddress, mbWriteHregValue, nullptr, 1);
+      mbWriteHregAddress = 0;
       iState = 0;
     }
     break;
