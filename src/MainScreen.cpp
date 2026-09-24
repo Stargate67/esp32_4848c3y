@@ -684,7 +684,7 @@ void lv_createChartMeasure(lv_obj_t *parent){
     // Une seule rangee: GRAPH_MEASUREMENT_COUNT mesures tiennent sur 460px de large.
     const lv_coord_t chipGap = 4, chipH = 28;
     const lv_coord_t chipW = (460 - (GRAPH_MEASUREMENT_COUNT - 1) * chipGap) / GRAPH_MEASUREMENT_COUNT;
-    const lv_coord_t chipsTop = 91; // 1px sous le bas des boutons du haut (y=30, hauteur 60 => bas a y=90)
+    const lv_coord_t chipsTop = 93; // boutons du haut: y=30, hauteur 59 => bas a y=89
     for (int m = 0; m < GRAPH_MEASUREMENT_COUNT; m++){
         lv_obj_t *chip = lv_btn_create(parent);
         lv_obj_set_size(chip, chipW, chipH);
@@ -867,38 +867,46 @@ void lv_createScreenPLC(lv_obj_t *parent){
     lv_obj_add_event_cb(kbPlc, my_event_cb_PlcKbHide, LV_EVENT_CANCEL, NULL);
 }
 
-// Cree l'ecran de saisie de la consigne de temperature (%MW630): pas de clavier, juste un
-// stepper +/- 0.2°C (plage 15.0-25.0°C) - plus sur et plus simple qu'un clavier pour une plage
-// aussi etroite, et ca evite un widget de plus a gerer sur ce panneau (voir commentaire sur les
+// Cree l'ecran de saisie de la consigne de temperature (%MW630): meme disposition qu'avant
+// (titre, grande valeur, stepper +/- 0.2°C, Valider), mais redimensionnee pour tenir dans le
+// quart superieur gauche de l'ecran (0-240 x 30-240, sous le bouton Retour commun a tous les
+// ecrans). Objectif: pouvoir dupliquer ce meme bloc dans les 3 autres quarts (sup droit, inf
+// gauche, inf droit) pour de futures consignes (plancher/ECS/radiateur...) sans reprendre la
+// disposition. Pas de clavier: un stepper est plus sur et plus simple pour une plage aussi
+// etroite (15-25°C), et evite un widget de plus a gerer sur ce panneau (voir commentaire sur les
 // chips de lv_createChartMeasure() plus haut au sujet du cout des invalidations larges).
 void lv_createScreenConsigne(lv_obj_t *parent){
+    lv_obj_t *lblUnused;
+    lv_obj_t *btnBack = createRelayButtonBase(parent, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackFromConsigneScreen);
+    lv_obj_set_style_bg_color(btnBack, lv_color_make(60, 60, 60), 0);
+    lv_obj_set_style_bg_grad_color(btnBack, lv_color_make(60, 60, 60), 0);
+
     lv_obj_t *lblTitle = lv_label_create(parent);
-    lv_label_set_text(lblTitle, "Consigne de temperature");
+    lv_label_set_text(lblTitle, "Cons. Temp. Salon");
     lv_obj_set_style_text_color(lblTitle, lv_color_white(), 0);
-    lv_obj_set_style_text_font(lblTitle, &lv_font_montserrat_20, 0);
-    lv_obj_set_pos(lblTitle, 20, 110);
+    lv_obj_set_style_text_font(lblTitle, &lv_font_montserrat_16, 0);
+    lv_obj_set_width(lblTitle, 220);
+    lv_obj_set_style_text_align(lblTitle, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(lblTitle, 10, 97);
 
     lblConsigneValue = lv_label_create(parent);
     lv_label_set_text(lblConsigneValue, "20.0 °C");
     lv_obj_set_style_text_color(lblConsigneValue, lv_color_hex(0xC2ED34), 0);
     lv_obj_set_style_text_font(lblConsigneValue, &lv_font_montserrat_40, 0);
-    lv_obj_align(lblConsigneValue, LV_ALIGN_TOP_MID, 0, 160);
+    lv_obj_set_width(lblConsigneValue, 220);
+    lv_obj_set_style_text_align(lblConsigneValue, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(lblConsigneValue, 10, 127);
 
-    lv_obj_t *lblUnused;
-    lv_obj_t *btnMinus = createRelayButtonBase(parent, 90, 250, 80, 80, "-", &lblUnused, my_event_cb_ConsigneMinus);
-    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_40, 0);
+    lv_obj_t *btnMinus = createRelayButtonBase(parent, 10, 187, 70, 53, "-", &lblUnused, my_event_cb_ConsigneMinus);
+    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_24, 0);
 
-    lv_obj_t *btnPlus = createRelayButtonBase(parent, 310, 250, 80, 80, "+", &lblUnused, my_event_cb_ConsignePlus);
-    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_40, 0);
-    (void)btnMinus; (void)btnPlus;
-
-    lv_obj_t *btnSave = createRelayButtonBase(parent, 180, 250, 120, 80, "Valider", &lblUnused, my_event_cb_ConsigneSave);
+    lv_obj_t *btnSave = createRelayButtonBase(parent, 85, 187, 70, 53, "Valider", &lblUnused, my_event_cb_ConsigneSave);
     lv_obj_set_style_bg_color(btnSave, lv_color_make(0, 120, 40), 0);
     lv_obj_set_style_bg_grad_color(btnSave, lv_color_make(0, 120, 40), 0);
 
-    lv_obj_t *btnBack = createRelayButtonBase(parent, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackFromConsigneScreen);
-    lv_obj_set_style_bg_color(btnBack, lv_color_make(60, 60, 60), 0);
-    lv_obj_set_style_bg_grad_color(btnBack, lv_color_make(60, 60, 60), 0);
+    lv_obj_t *btnPlus = createRelayButtonBase(parent, 160, 187, 70, 53, "+", &lblUnused, my_event_cb_ConsignePlus);
+    lv_obj_set_style_text_font(lblUnused, &lv_font_montserrat_24, 0);
+    (void)btnMinus; (void)btnPlus;
 }
 
 void lv_CreateIPLabel(lv_obj_t * parent)
@@ -993,18 +1001,19 @@ void InitUI(){
   lv_obj_set_style_bg_grad_color(btnCde, lv_color_make(60, 60, 60), 0);
 
   // y=30: laisse la place a la zone commune (IP/horloge/alarme, sur lv_layer_top())
-  // desormais visible aussi sur cet ecran.
-  lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 30, 120, 60, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
+  // desormais visible aussi sur cet ecran. Hauteur 59 (au lieu de 60): bas a y=89, pour laisser
+  // 2px avant la rangee de chips du graphique (voir chipsTop dans lv_createChartMeasure()).
+  lv_obj_t *btnRetour = createRelayButtonBase(ui_ScreenRelais, 0, 30, 120, 59, "< Retour", &lblUnused, my_event_cb_BackMainScreen);
   lv_obj_set_style_bg_color(btnRetour, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnRetour, lv_color_make(60, 60, 60), 0);
 
   // Bouton d'acces a l'ecran de config WiFi, a cote du bouton Retour
-  lv_obj_t *btnWifi = createRelayButtonBase(ui_ScreenRelais, 130, 30, 120, 60, "WiFi >", &lblUnused, my_event_cb_GoWifiScreen);
+  lv_obj_t *btnWifi = createRelayButtonBase(ui_ScreenRelais, 130, 30, 120, 59, "WiFi >", &lblUnused, my_event_cb_GoWifiScreen);
   lv_obj_set_style_bg_color(btnWifi, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnWifi, lv_color_make(60, 60, 60), 0);
 
   // Bouton d'acces a l'ecran de config adresse IP du PLC, a cote du bouton WiFi
-  lv_obj_t *btnPlc = createRelayButtonBase(ui_ScreenRelais, 260, 30, 120, 60, "PLC >", &lblUnused, my_event_cb_GoPLCScreen);
+  lv_obj_t *btnPlc = createRelayButtonBase(ui_ScreenRelais, 260, 30, 120, 59, "PLC >", &lblUnused, my_event_cb_GoPLCScreen);
   lv_obj_set_style_bg_color(btnPlc, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnPlc, lv_color_make(60, 60, 60), 0);
 
@@ -1012,7 +1021,7 @@ void InitUI(){
   // permanence la valeur relue du PLC (ui_LblValConsigneTemp, mis a jour dans My_Modbus.cpp)
   // sous le titre statique, pas besoin d'ouvrir l'ecran pour la consulter.
   lv_obj_t *lblConsigneTitle;
-  lv_obj_t *btnConsigne = createRelayButtonBase(ui_ScreenRelais, 390, 30, 90, 60, "Consigne", &lblConsigneTitle, my_event_cb_GoConsigneScreen);
+  lv_obj_t *btnConsigne = createRelayButtonBase(ui_ScreenRelais, 390, 30, 90, 59, "Consigne", &lblConsigneTitle, my_event_cb_GoConsigneScreen);
   lv_obj_set_style_bg_color(btnConsigne, lv_color_make(60, 60, 60), 0);
   lv_obj_set_style_bg_grad_color(btnConsigne, lv_color_make(60, 60, 60), 0);
   lv_obj_align(lblConsigneTitle, LV_ALIGN_TOP_MID, 0, 4);
